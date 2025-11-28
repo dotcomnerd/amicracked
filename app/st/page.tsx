@@ -16,6 +16,7 @@ import { ColourfulText } from '@/components/ui/colorful-text'
 import { Progress } from '@/components/ui/progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
 import Grid, { type ItemConfig } from '@/lib/grid'
+import { allBrands } from '@/lib/brands'
 import {
   calculateFormulaBasedScore,
 } from '@/lib/scoring'
@@ -27,15 +28,8 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import Confetti from 'react-confetti'
-import * as icons from 'simple-icons'
 
 const TOTAL_STEPS = 5
-
-const allBrands = Object.values(icons).map((icon) => ({
-  name: icon.title,
-  slug: icon.slug,
-  url: `https://cdn.simpleicons.org/${icon.slug}`,
-})).sort(() => Math.random() - 0.5)
 
 const GridCell = ({ gridIndex }: ItemConfig) => {
   const brand = allBrands[gridIndex % allBrands.length]
@@ -606,7 +600,7 @@ export default function Home() {
       </header>
 
       <main className="relative z-50 flex min-h-screen items-center justify-center p-4 pt-20">
-        <Card className="w-full max-w-2xl shadow-lg border-border/50">
+        <Card variant="glass" className="w-full max-w-2xl">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -671,6 +665,7 @@ export default function Home() {
                     </p>
                     <Button
                       variant="outline"
+                      className="text-sm px-3 py-2 h-auto"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       Select File
@@ -781,7 +776,7 @@ export default function Home() {
             {currentStep === 5 && (
             <div className="space-y-6 text-center py-8">
                 {isGrading ? (
-                  <Card>
+                  <Card variant="glass">
                     <CardContent className="pt-6">
                       <ChainOfThought defaultOpen>
                         <ChainOfThoughtHeader>
@@ -827,12 +822,15 @@ export default function Home() {
               {currentStep === 1 && (
                 <Button
                   variant="outline"
+                  className="text-sm px-3 py-2 h-auto"
                   onClick={handleSkip}
                 >
                   Skip
                 </Button>
               )}
               <Button
+                  variant="outline"
+                  className="text-sm px-3 py-2 h-auto"
                   onClick={handleNextStep}
                   disabled={
                     (currentStep === 2 && extractedText && Object.keys(questionAnswers).length !== 3) ||
@@ -847,6 +845,8 @@ export default function Home() {
             </div>
           ) : (
             <Button
+                  variant="outline"
+                  className="text-sm px-3 py-2 h-auto"
                   onClick={() => {
                     setScore(null)
                     setIsGrading(false)

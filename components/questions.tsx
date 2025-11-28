@@ -114,7 +114,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
 
   if (error) {
     return (
-      <Card className="border-destructive">
+      <Card variant="glass" className="border-destructive">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 text-destructive">
             <XCircle className="h-5 w-5" />
@@ -128,7 +128,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
   return (
     <div className="space-y-6">
       {(isLoading || questions.length < 3) && (
-        <Card>
+        <Card variant="glass">
           <CardContent className="pt-6">
             <ChainOfThought defaultOpen>
               <ChainOfThoughtHeader>
@@ -185,6 +185,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
         return options ? (
           <Card
             key={index}
+            variant="glass"
             className="overflow-hidden"
           >
             {codeData?.language && codeData?.src && (
@@ -301,6 +302,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
         ) : (
           <Card
             key={index}
+            variant="glass"
             className="animate-pulse border-dashed border-muted"
           >
             <CardHeader>

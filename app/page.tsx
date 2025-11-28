@@ -6,16 +6,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ColourfulText } from '@/components/ui/colorful-text'
 import { Separator } from '@/components/ui/separator'
 import Grid, { type ItemConfig } from '@/lib/grid'
+import { allBrands } from '@/lib/brands'
 import { cn } from '@/lib/utils'
 import { ArrowRight, Code2 } from 'lucide-react'
 import Link from 'next/link'
-import * as icons from 'simple-icons'
-
-const allBrands = Object.values(icons).map((icon) => ({
-  name: icon.title,
-  slug: icon.slug,
-  url: `https://cdn.simpleicons.org/${icon.slug}`,
-})).sort(() => Math.random() - 0.5)
 
 const GridCell = ({ gridIndex }: ItemConfig) => {
   const brand = allBrands[gridIndex % allBrands.length]
@@ -56,7 +50,7 @@ export default function LandingPage() {
         <Grid gridSize={120} renderItem={GridCell} />
       </div>
       <div className="relative z-50 flex items-center justify-center min-h-screen p-4 pointer-events-none">
-        <Card className={cn("w-auto max-w-2xl backdrop-blur-xl bg-background/60 border-border/50 shadow-2xl pointer-events-auto select-none py-2 gap-2")}>
+        <Card variant="glass" className={cn("w-auto max-w-2xl pointer-events-auto select-none py-2 gap-2")}>
           <CardContent className={cn("p-2")}>
             <div className="text-center space-y-2">
               <div className="space-y-1">
