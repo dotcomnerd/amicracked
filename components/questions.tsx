@@ -3,6 +3,12 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtStep,
+} from '@/components/ui/chain-of-thought'
+import {
   type BundledLanguage,
   CodeBlock,
   CodeBlockBody,
@@ -14,7 +20,7 @@ import {
   CodeBlockItem,
 } from '@/components/ui/codeblock'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, Code, FileText, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Streamdown } from 'streamdown'
 import { z } from 'zod'
@@ -94,6 +100,18 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
   const allQuestionsLoaded = questions.length === 3
   const allAnswered = Object.keys(selectedAnswers).length === 3
 
+  const getStepStatus = (stepIndex: number): 'complete' | 'active' | 'pending' => {
+    if (stepIndex === 0) {
+      if (questions.length > 0) return 'complete'
+      if (isLoading) return 'active'
+      return 'pending'
+    }
+    const questionIndex = stepIndex - 1
+    if (questions[questionIndex]) return 'complete'
+    if (isLoading && questions.length === questionIndex) return 'active'
+    return 'pending'
+  }
+
   if (error) {
     return (
       <Card className="border-destructive">
@@ -109,18 +127,44 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
 
   return (
     <div className="space-y-6">
-      {isLoading && questions.length === 0 && (
+      {(isLoading || questions.length < 3) && (
         <Card>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <div>
-                <p className="font-medium">Generating questions...</p>
-                <p className="text-sm text-muted-foreground">
-                  Analyzing your resume and creating personalized questions
-                </p>
-              </div>
-            </div>
+          <CardContent className="pt-6">
+            <ChainOfThought defaultOpen>
+              <ChainOfThoughtHeader>
+                Generating personalized questions
+              </ChainOfThoughtHeader>
+              <ChainOfThoughtContent>
+                <ChainOfThoughtStep
+                  icon={getStepStatus(0) === 'active' ? Loader2 : FileText}
+                  label="Analyzing resume content"
+                  description="Extracting technologies, skills, and experience"
+                  status={getStepStatus(0)}
+                  animateIcon={getStepStatus(0) === 'active'}
+                />
+                <ChainOfThoughtStep
+                  icon={getStepStatus(1) === 'active' ? Loader2 : Code}
+                  label="Generating question 1"
+                  description="Creating first technical question based on your experience"
+                  status={getStepStatus(1)}
+                  animateIcon={getStepStatus(1) === 'active'}
+                />
+                <ChainOfThoughtStep
+                  icon={getStepStatus(2) === 'active' ? Loader2 : Code}
+                  label="Generating question 2"
+                  description="Creating second technical question based on your experience"
+                  status={getStepStatus(2)}
+                  animateIcon={getStepStatus(2) === 'active'}
+                />
+                <ChainOfThoughtStep
+                  icon={getStepStatus(3) === 'active' ? Loader2 : Code}
+                  label="Generating question 3"
+                  description="Creating third technical question based on your experience"
+                  status={getStepStatus(3)}
+                  animateIcon={getStepStatus(3) === 'active'}
+                />
+              </ChainOfThoughtContent>
+            </ChainOfThought>
           </CardContent>
         </Card>
       )}

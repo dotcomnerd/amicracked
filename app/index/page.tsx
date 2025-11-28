@@ -6,13 +6,19 @@ import { ResumePreview } from '@/components/resume-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtStep,
+} from '@/components/ui/chain-of-thought'
 import { ColourfulText } from '@/components/ui/colorful-text'
 import { Progress } from '@/components/ui/progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
 import type { Question } from '@/lib/store'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
-import { CheckCircle2, Code2, Sparkles, XCircle } from 'lucide-react'
+import { CheckCircle2, Code2, Loader2, Sparkles, XCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -213,10 +219,40 @@ const CodeEditorContent = ({ onCodeValidChange }: { onCodeValidChange: (isValid:
 }
 
 const getCrackedStatus = (score: number): string => {
+  if (score >= 98) return 'Legendary 10x Engineer God'
+  if (score >= 95) return 'True Wizard'
+  if (score >= 92) return 'Mythic Engineer'
+  if (score >= 89) return 'Cracked Beyond Repair'
+  if (score >= 86) return 'Savant Tier Engineer'
+  if (score >= 83) return 'Super Cracked'
   if (score >= 80) return 'Extremely Cracked'
-  if (score >= 60) return 'Very Cracked'
-  if (score >= 40) return 'Moderately Cracked'
-  if (score >= 20) return 'Somewhat Cracked'
+  if (score >= 77) return 'Notoriously Cracked'
+  if (score >= 74) return 'Interviewer\'s Nightmare'
+  if (score >= 71) return 'Blazing Senior'
+  if (score >= 68) return 'Commit Genius'
+  if (score >= 65) return 'Syntax Maestro'
+  if (score >= 62) return 'Framework Whisperer'
+  if (score >= 59) return 'Very Cracked'
+  if (score >= 56) return 'Dependabot Supreme'
+  if (score >= 53) return 'Merge Master'
+  if (score >= 50) return 'Solid PR Author'
+  if (score >= 47) return 'Bug Squasher'
+  if (score >= 44) return 'Functionally Sound'
+  if (score >= 41) return 'Moderately Cracked'
+  if (score >= 38) return 'Reliable Contributor'
+  if (score >= 35) return 'Methodical Debugger'
+  if (score >= 32) return 'Ship-It Beginner'
+  if (score >= 29) return 'Somewhat Cracked'
+  if (score >= 26) return 'Needs More Coffee'
+  if (score >= 23) return 'Syntax Survivor'
+  if (score >= 20) return 'Stack Overflow Explorer'
+  if (score >= 17) return 'Junior Enthusiast'
+  if (score >= 14) return 'Learning Looper'
+  if (score >= 11) return 'Tutorial Follower'
+  if (score >= 8) return 'Bootcamp Grad'
+  if (score >= 5) return 'Wrote Some Code'
+  if (score >= 2) return 'Just Here For The Memes'
+  if (score === 1) return 'Pressed a Button'
   return 'Not Very Cracked'
 }
 
@@ -606,22 +642,31 @@ export default function Home() {
             {currentStep === 5 && (
             <div className="space-y-6 text-center py-8">
                 {isGrading ? (
-                  <div className="space-y-4">
-                    <div className="text-lg text-muted-foreground">Calculating your score...</div>
-                    <div className="flex justify-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                    </div>
-                  </div>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <ChainOfThought defaultOpen>
+                        <ChainOfThoughtHeader>
+                          Calculating your cracked score
+                        </ChainOfThoughtHeader>
+                        <ChainOfThoughtContent>
+                          <ChainOfThoughtStep
+                            icon={Loader2}
+                            label="Analyzing your performance"
+                            description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
+                            status="active"
+                            animateIcon
+                          />
+                        </ChainOfThoughtContent>
+                      </ChainOfThought>
+                    </CardContent>
+                  </Card>
                 ) : (
                   <>
                       <div className="space-y-2">
                         <h3 className="text-2xl font-semibold">You Are</h3>
-                        <div className="text-4xl font-bold text-primary">{status}</div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="text-5xl font-bold">{finalScore}%</div>
-                        <div className="text-sm text-muted-foreground">Cracked Score</div>
+                        <div className="text-4xl font-bold text-primary"><ColourfulText text={status} /></div>
+                        <div className="text-5xl font-bold"><ColourfulText text={`${finalScore}%`} /></div>
+                        <div className="text-xs text-muted-foreground">Note: this is just a joke and is not to be taken seriously.</div>
                       </div>
                   </>
                 )}
