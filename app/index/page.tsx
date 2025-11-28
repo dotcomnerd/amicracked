@@ -569,7 +569,7 @@ export default function Home() {
                         </Button>
 
                         <p className="text-sm text-muted-foreground">
-                          Note: Your data is not stored. <a href="https://github.com/dotcomnerd/amicracked" className="text-primary underline">Don't believe us? Check the code.</a>
+                          Note: Your data is not stored. <a href="https://github.com/dotcomnerd/amicracked/blob/main/app/api/ocr/route.ts" className="text-primary underline">Don't believe us? Check the code.</a>
                         </p>
                   </div>
                 )}
