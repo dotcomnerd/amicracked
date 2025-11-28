@@ -16,50 +16,50 @@ const RainbowProgress = React.forwardRef<HTMLDivElement, RainbowProgressProps>(
       <div
         ref={ref}
         className={cn(
-          "relative h-6 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner dark:bg-gray-800",
+          "relative h-4 w-full overflow-hidden rounded-lg bg-muted shadow-inner border border-border/50",
           className
         )}
       >
-        <div className="relative h-full w-full rounded-full border border-black/10 shadow-[inset_0_0_1px_3px_rgba(255,255,255,0.75)] dark:shadow-[inset_0_0_1px_3px_rgba(255,255,255,0.15)]">
+        <div className="relative h-full w-full rounded-lg">
           {/* rainbow fill */}
           <div
-            className="absolute inset-0 rounded-full transition-[clip-path] duration-1000 ease-out"
+            className="absolute inset-0 rounded-lg transition-[clip-path] duration-700 ease-out"
             style={{
               background: `linear-gradient(
-                -90deg,
-                violet,
-                #b360ff,
-                #8fd4ff,
-                #e2ff73,
-                yellow,
+                90deg,
+                #ff437a,
                 orange,
-                #ff437a
+                yellow,
+                #e2ff73,
+                #8fd4ff,
+                #b360ff,
+                violet
               )`,
               clipPath: `inset(0 ${100 - clampedValue}% 0 0)`,
             }}
           >
             {/* stripe overlay */}
             <div
-              className="absolute inset-0 rounded-full opacity-75 mix-blend-overlay"
+              className="absolute inset-0 rounded-lg opacity-40 mix-blend-overlay"
               style={{
                 backgroundImage: `repeating-linear-gradient(
                   -45deg,
                   transparent,
-                  transparent 10px,
-                  black 10px,
-                  black 20px
+                  transparent 6px,
+                  rgba(0,0,0,0.4) 6px,
+                  rgba(0,0,0,0.4) 12px
                 )`,
               }}
             />
           </div>
           {/* glossy light bar */}
           <div
-            className="pointer-events-none absolute left-1/2 top-[2px] h-[10px] w-[96%] -translate-x-1/2 rounded-[20px]"
+            className="pointer-events-none absolute left-1 right-1 top-[2px] h-[6px] rounded-md"
             style={{
               background: `linear-gradient(
                 to bottom,
-                rgba(255,255,255,0.85) 30%,
-                transparent 120%
+                rgba(255,255,255,0.5) 0%,
+                rgba(255,255,255,0.1) 100%
               )`,
             }}
           />

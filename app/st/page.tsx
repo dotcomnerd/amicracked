@@ -25,6 +25,7 @@ import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
 import confetti from 'canvas-confetti'
 import { CheckCircle2, Code2, Loader2, Sparkles, Timer, XCircle } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -604,196 +605,254 @@ export default function Home() {
             <RainbowProgress value={progress} className="mt-4 h-4" />
           </CardHeader>
 
-        <CardContent className="space-y-3">
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                  }`}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                {resumeFile ? (
-                    <div className="space-y-3">
-                    <p className="text-sm font-medium">{resumeFile.name}</p>
-                    {isProcessing && (
-                      <p className="text-xs text-muted-foreground">Processing PDF...</p>
-                    )}
-                      <ResumePreview file={resumeFile} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setResumeFile(null)
-                        setExtractedText(null)
-                        setResumeScore(0)
-                        fileInputRef.current?.click()
-                      }}
-                      disabled={isProcessing}
-                    >
-                      Change File
-                    </Button>
-                  </div>
-                ) : (
+          <CardContent className="space-y-3 overflow-hidden min-h-[500px]">
+            <AnimatePresence mode="wait" initial={false}>
+              {currentStep === 1 && (
+                <motion.div
+                  key="step-1"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
                   <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Optionally upload your resume to (maybe) boost your score ;)
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="text-sm px-3 py-2 h-auto"
-                      onClick={() => fileInputRef.current?.click()}
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                        }`}
                     >
-                      Select File
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+
+                      {resumeFile ? (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">{resumeFile.name}</p>
+                          {isProcessing && (
+                            <p className="text-xs text-muted-foreground">Processing PDF...</p>
+                          )}
+                          <ResumePreview file={resumeFile} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setResumeFile(null)
+                              setExtractedText(null)
+                              setResumeScore(0)
+                              fileInputRef.current?.click()
+                            }}
+                            disabled={isProcessing}
+                          >
+                            Change File
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Optionally upload your resume to (maybe) boost your score ;)
+                          </p>
+                          <Button
+                            variant="outline"
+                            className="text-sm px-3 py-2 h-auto"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            Select File
                         </Button>
 
                         <p className="text-sm text-muted-foreground">
                           Note: Your data is <a href="https://github.com/dotcomnerd/amicracked/blob/main/app/api/questions/route.ts#L17" className="text-primary underline">not stored</a>. I do not care about your data.
                         </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                </motion.div>
+              )}
 
             {currentStep === 2 && extractedText && (
-            <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Resume Questions</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Answer these questions based on your resume to test your knowledge
-                  </p>
-                </div>
-                <Questions
-                  resumeText={extractedText}
-                  onComplete={(answers) => {
-                    setQuestionAnswers(answers)
-                  }}
-                  onQuestionsLoaded={handleQuestionsLoaded}
-                />
-              </div>
+                <motion.div
+                  key="step-2-questions"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold">Resume Questions</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Answer these questions based on your resume to test your knowledge
+                      </p>
+                    </div>
+                    <Questions
+                      resumeText={extractedText}
+                      onComplete={(answers) => {
+                        setQuestionAnswers(answers)
+                      }}
+                      onQuestionsLoaded={handleQuestionsLoaded}
+                    />
+                  </div>
+                </motion.div>
             )}
 
             {currentStep === 2 && !extractedText && (
-              <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <div className="col-span-full">
-                    <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
-                </div>
-                {PROGRAMMING_LANGUAGES.map((language) => (
-                  <Button
-                    key={language}
-                    variant={favoriteLanguage === language ? 'default' : 'outline'}
-                    onClick={() => setFavoriteLanguage(language)}
-                    className="h-auto py-3"
-                  >
-                    {language}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && !favoriteLanguage && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <div className="col-span-full">
-                    <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
+                <motion.div
+                  key="step-2-language"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <div className="col-span-full">
+                        <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
+                      </div>
+                      {PROGRAMMING_LANGUAGES.map((language) => (
+                        <Button
+                          key={language}
+                          variant={favoriteLanguage === language ? 'default' : 'outline'}
+                          onClick={() => setFavoriteLanguage(language)}
+                          className="h-auto py-3"
+                        >
+                          {language}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                  {PROGRAMMING_LANGUAGES.map((language) => (
-                    <Button
-                      key={language}
-                      variant={favoriteLanguage === language ? 'default' : 'outline'}
-                      onClick={() => setFavoriteLanguage(language)}
-                      className="h-auto py-3"
-                    >
-                      {language}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+                </motion.div>
+              )}
+
+              {currentStep === 3 && !favoriteLanguage && (
+                <motion.div
+                  key="step-3-first-language"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <div className="col-span-full">
+                        <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
+                      </div>
+                      {PROGRAMMING_LANGUAGES.map((language) => (
+                        <Button
+                          key={language}
+                          variant={favoriteLanguage === language ? 'default' : 'outline'}
+                          onClick={() => setFavoriteLanguage(language)}
+                          className="h-auto py-3"
+                        >
+                          {language}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
             )}
 
-          {currentStep === 3 && favoriteLanguage && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <div className="col-span-full">
-                    <h3 className="text-lg font-semibold">What's your second favorite programming language?</h3>
+              {currentStep === 3 && favoriteLanguage && (
+                <motion.div
+                  key="step-3-second-language"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <div className="col-span-full">
+                        <h3 className="text-lg font-semibold">What's your second favorite programming language?</h3>
+                      </div>
+                      {PROGRAMMING_LANGUAGES.map((language) => (
+                        <Button
+                          key={language}
+                          variant={secondFavoriteLanguage === language ? 'default' : 'outline'}
+                          onClick={() => setSecondFavoriteLanguage(language)}
+                          className="h-auto py-3"
+                          disabled={language === favoriteLanguage}
+                        >
+                          {language}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                  {PROGRAMMING_LANGUAGES.map((language) => (
-                    <Button
-                      key={language}
-                      variant={secondFavoriteLanguage === language ? 'default' : 'outline'}
-                      onClick={() => setSecondFavoriteLanguage(language)}
-                      className="h-auto py-3"
-                      disabled={language === favoriteLanguage}
-                    >
-                      {language}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+                </motion.div>
             )}
 
             {currentStep === 4 && (
-              <CodeEditor
-                onCodeValidChange={setIsCodeValid}
-                isValid={isCodeValid}
-                onBadgeRef={handleBadgeRef}
-                timerStartTime={timerStartTime}
-                onTimeUpdate={(time) => {
-                  if (isCodeValid && codeChallengeTime === null) {
-                    setCodeChallengeTime(time)
-                  }
-                }}
-              />
+                <motion.div
+                  key="step-4"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <CodeEditor
+                    onCodeValidChange={setIsCodeValid}
+                    isValid={isCodeValid}
+                    onBadgeRef={handleBadgeRef}
+                    timerStartTime={timerStartTime}
+                    onTimeUpdate={(time) => {
+                      if (isCodeValid && codeChallengeTime === null) {
+                        setCodeChallengeTime(time)
+                      }
+                    }}
+                  />
+                </motion.div>
             )}
 
             {currentStep === 5 && (
-            <div className="space-y-6 text-center py-8">
-                {isGrading ? (
-                  <Card variant="glass">
-                    <CardContent className="pt-6">
-                      <ChainOfThought defaultOpen>
-                        <ChainOfThoughtHeader>
-                          Calculating your cracked score
-                        </ChainOfThoughtHeader>
-                        <ChainOfThoughtContent>
-                          <ChainOfThoughtStep
-                            icon={Loader2}
-                            label="Analyzing your performance"
-                            description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
-                            status="active"
-                            animateIcon
-                          />
-                        </ChainOfThoughtContent>
-                      </ChainOfThought>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <>
+                <motion.div
+                  key="step-5"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <div className="space-y-6 text-center py-8">
+                    {isGrading ? (
+                      <Card variant="glass">
+                        <CardContent className="pt-6">
+                          <ChainOfThought defaultOpen>
+                            <ChainOfThoughtHeader>
+                              Calculating your cracked score
+                            </ChainOfThoughtHeader>
+                            <ChainOfThoughtContent>
+                              <ChainOfThoughtStep
+                                icon={Loader2}
+                                label="Analyzing your performance"
+                                description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
+                                status="active"
+                                animateIcon
+                              />
+                            </ChainOfThoughtContent>
+                          </ChainOfThought>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <>
                       <div className="space-y-2">
                         <h3 className="text-2xl font-semibold">You Are</h3>
                         <div className="text-4xl font-bold text-primary"><ColourfulText text={status} /></div>
                         <div className="text-5xl font-bold"><ColourfulText text={`${finalScore}%`} /></div>
                         <div className="text-xs text-muted-foreground">Note: this is just a joke and is not to be taken seriously.</div>
                       </div>
-                  </>
-                )}
-              </div>
-          )}
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
         </CardContent>
 
         <CardFooter className="flex justify-between">
