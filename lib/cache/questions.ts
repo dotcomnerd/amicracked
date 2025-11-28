@@ -1,7 +1,5 @@
-'use cache'
-
 import { openai } from '@ai-sdk/openai'
-import { generateObject } from 'ai'
+import { streamObject } from 'ai'
 import { z } from 'zod'
 
 const codeSchema = z.object({
@@ -25,8 +23,8 @@ const questionsSchema = z.object({
   questions: z.array(questionSchema).length(3),
 })
 
-export async function generateResumeQuestions(resumeText: string) {
-  const result = await generateObject({
+export function generateResumeQuestions(resumeText: string) {
+  return streamObject({
     model: openai('gpt-5-nano'),
     schema: questionsSchema,
     prompt: `
@@ -40,7 +38,7 @@ Only use technologies and concepts that appear directly in their text. Never int
 
 
 exam style rules:
-Write each question exactly like a technical exam item. Do not reference the resume, projects, bullet points, the uploaded text, or why the question exists. No meta commentary. No explanations of motivation. No references to “based on what you said.” The question must stand entirely on its own as a neutral test question.
+Write each question exactly like a technical exam item. Do not reference the resume, projects, bullet points, the uploaded text, or why the question exists. No meta commentary. No explanations of motivation. No references to "based on what you said." The question must stand entirely on its own as a neutral test question.
 
 tone rules:
 Keep questions short, direct, and confident. Avoid conversational language. Avoid hedging. Avoid narrative framing. Present the scenario or code immediately.
@@ -88,6 +86,4 @@ Output format must strictly match:
 No markdown. No commentary. No explanations. Produce only the object.
 `,
   })
-
-  return result.object
 }
