@@ -2,11 +2,11 @@
 
 import React, { Component } from 'react'
 
-const MIN_VELOCITY = 0.2
+const MIN_VELOCITY = 0.5
 const UPDATE_INTERVAL = 16
 const VELOCITY_HISTORY_SIZE = 5
-const FRICTION = 0.9
-const VELOCITY_THRESHOLD = 0.3
+const FRICTION = 0.95
+const VELOCITY_MULTIPLIER = 15
 
 function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
@@ -158,11 +158,6 @@ class Grid extends Component<GridProps, State> {
       this.containerRef.current.addEventListener('wheel', this.handleWheel, {
         passive: false,
       })
-      this.containerRef.current.addEventListener(
-        'touchmove',
-        this.handleTouchMove,
-        { passive: false }
-      )
     }
   }
 
@@ -175,10 +170,6 @@ class Grid extends Component<GridProps, State> {
 
     if (this.containerRef.current) {
       this.containerRef.current.removeEventListener('wheel', this.handleWheel)
-      this.containerRef.current.removeEventListener(
-        'touchmove',
-        this.handleTouchMove
-      )
     }
   }
 
@@ -278,11 +269,6 @@ class Grid extends Component<GridProps, State> {
         return
       }
 
-      let deceleration = FRICTION
-      if (speed < VELOCITY_THRESHOLD) {
-        deceleration = FRICTION * (speed / VELOCITY_THRESHOLD)
-      }
-
       this.setState(
         (prevState) => ({
           offset: {
@@ -290,8 +276,8 @@ class Grid extends Component<GridProps, State> {
             y: prevState.offset.y + prevState.velocity.y,
           },
           velocity: {
-            x: prevState.velocity.x * deceleration,
-            y: prevState.velocity.y * deceleration,
+            x: prevState.velocity.x * FRICTION,
+            y: prevState.velocity.y * FRICTION,
           },
         }),
         this.debouncedUpdateGridItems
@@ -358,18 +344,28 @@ class Grid extends Component<GridProps, State> {
   }
 
   private handleUp = () => {
-    this.setState({ isDragging: false })
+    // Scale up velocity for momentum effect
+    this.setState((prevState) => ({
+      isDragging: false,
+      velocity: {
+        x: prevState.velocity.x * VELOCITY_MULTIPLIER,
+        y: prevState.velocity.y * VELOCITY_MULTIPLIER,
+      },
+    }))
+    this.lastUpdateTime = performance.now()
     this.animationFrame = requestAnimationFrame(this.animate)
   }
 
-  private handleMouseDown = (e: React.MouseEvent) => {
+  private handlePointerDown = (e: React.PointerEvent) => {
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     this.handleDown({
       x: e.clientX,
       y: e.clientY,
     })
   }
 
-  private handleMouseMove = (e: React.MouseEvent) => {
+  private handlePointerMove = (e: React.PointerEvent) => {
+    if (!this.state.isDragging) return
     e.preventDefault()
     this.handleMove({
       x: e.clientX,
@@ -377,32 +373,8 @@ class Grid extends Component<GridProps, State> {
     })
   }
 
-  private handleMouseUp = () => {
-    this.handleUp()
-  }
-
-  private handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    if (!touch) return
-
-    this.handleDown({
-      x: touch.clientX,
-      y: touch.clientY,
-    })
-  }
-
-  private handleTouchMove = (e: TouchEvent) => {
-    const touch = e.touches[0]
-    if (!touch) return
-
-    e.preventDefault()
-    this.handleMove({
-      x: touch.clientX,
-      y: touch.clientY,
-    })
-  }
-
-  private handleTouchEnd = () => {
+  private handlePointerUp = (e: React.PointerEvent) => {
+    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
     this.handleUp()
   }
 
@@ -443,13 +415,10 @@ class Grid extends Component<GridProps, State> {
           overflow: 'hidden',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
-        onMouseDown={this.handleMouseDown}
-        onMouseMove={this.handleMouseMove}
-        onMouseUp={this.handleMouseUp}
-        onMouseLeave={this.handleMouseUp}
-        onTouchStart={this.handleTouchStart}
-        onTouchEnd={this.handleTouchEnd}
-        onTouchCancel={this.handleTouchEnd}
+        onPointerDown={this.handlePointerDown}
+        onPointerMove={this.handlePointerMove}
+        onPointerUp={this.handlePointerUp}
+        onPointerCancel={this.handlePointerUp}
       >
         <div
           style={{
