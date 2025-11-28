@@ -10,10 +10,10 @@ const codeSchema = z.object({
 const questionSchema = z.object({
   question: z.string().describe('The question text'),
   options: z.object({
-    A: z.string().describe('Option A'),
-    B: z.string().describe('Option B'),
-    C: z.string().describe('Option C'),
-    D: z.string().describe('Option D'),
+    A: z.string().describe('Option A - Use markdown format. If the answer contains code, wrap it in markdown code blocks with ```language syntax.'),
+    B: z.string().describe('Option B - Use markdown format. If the answer contains code, wrap it in markdown code blocks with ```language syntax.'),
+    C: z.string().describe('Option C - Use markdown format. If the answer contains code, wrap it in markdown code blocks with ```language syntax.'),
+    D: z.string().describe('Option D - Use markdown format. If the answer contains code, wrap it in markdown code blocks with ```language syntax.'),
   }),
   correctAnswer: z.enum(['A', 'B', 'C', 'D']).describe('The correct answer'),
   code: codeSchema.describe('Required code snippet for the question'),
@@ -37,22 +37,29 @@ strict grounding rules:
 Only use technologies and concepts that appear directly in their text. Never introduce new domains, tools, frameworks, libraries, or languages. No assumptions and no extrapolation. No guessing. No domain expansion. Each question must be grounded in a distinct technology or claim found in the uploaded text.
 
 
+question format rules:
+- The code snippet is ALWAYS shown above the question. The question must reference THIS code snippet.
+- NEVER ask "which code" or "which snippet" - there is only one code block shown.
+- The question should ask ABOUT the code: what it outputs, what it does, what happens when it runs, what a specific part means, or what would happen if something changed.
+- Questions should be in the format: "What does this code output?", "What happens when this function is called?", "What is the value of X after this code runs?", "What does line Y do?", etc.
+- The code block is the context - use it to test understanding of the code's behavior, not to ask which code to use.
+
 exam style rules:
 Write each question exactly like a technical exam item. Do not reference the resume, projects, bullet points, the uploaded text, or why the question exists. No meta commentary. No explanations of motivation. No references to "based on what you said." The question must stand entirely on its own as a neutral test question.
 
 tone rules:
-Keep questions short, direct, and confident. Avoid conversational language. Avoid hedging. Avoid narrative framing. Present the scenario or code immediately.
+Keep questions short, direct, and confident. Avoid conversational language. Avoid hedging. Avoid narrative framing. Reference the code snippet directly (e.g., "Given the code above" or "What does this code output").
 
 coverage rules:
 All three questions must cover three different technologies or claims from the uploaded text, but you must not mention this requirement or reference that you are covering different items.
 
 code snippet requirements:
-Every question must include a code snippet. Mandatory. The snippet must be:
+Every question must include a code snippet that serves as the CONTEXT for the question. The snippet must be:
 - 5 to 20 lines
 - syntactically valid and plausible
-- executable or near-executable
+- executable or near-executable (or demonstrate a clear pattern/API usage)
 - raw text only, no markdown fences
-- directly relevant to the concept being tested
+- directly relevant to the concept being tested - the question will ask ABOUT this code
 - written only in languages explicitly present in the uploaded text
 - must preserve indentation exactly as written. No trimming. No escaping. No \\n sequences. Use literal newlines and literal spaces. Do not collapse indentation. Do not left-shift lines. Output raw code exactly as it should render inside a code editor.
 - the schema language field must be the same as the language of the code snippet.
@@ -62,6 +69,34 @@ Every question must include a code snippet. Mandatory. The snippet must be:
 
 The snippet should test understanding of API usage, function behavior, side effects, syntax, framework patterns, algorithms, data structures, or similar relevant mechanisms.
 
+The question should ask about:
+- What the code outputs or returns
+- What happens when the code executes
+- What a specific variable/function/line does
+- What would happen if something in the code changed
+- Understanding of the code's behavior, not which code to write
+
+Example good questions:
+- "What does this code output?"
+- "What is the value of result after this code executes?"
+- "What happens when processData is called?"
+- "What does line 5 do in this code?"
+- "What would happen if we changed variable x to y?"
+
+Example bad questions (DO NOT USE):
+- "Which code demonstrates X?" (there's only one code block shown)
+- "Which snippet would you use?" (there's only one code block shown)
+- "Select the correct implementation" (there's only one code block shown)
+
+answer option formatting rules:
+- Answer options should be written in plain text by default
+- When an answer option contains code snippets, function names, API calls, or technical syntax, wrap the code portions in markdown code blocks
+- Use inline code backticks for single identifiers: Use \`useState\` hook
+- Use code blocks for multi-line code: \`\`\`javascript\nconst x = 1;\n\`\`\`
+- Always specify the language in code blocks: \`\`\`typescript\`, \`\`\`python\`, etc.
+- Mix text and code naturally: "Call \`encode()\` method" or "Use \`\`\`javascript\nVideoEncoder.encode(frame)\n\`\`\`"
+- The markdown will be rendered, so ensure proper formatting
+
 Output format must strictly match:
 
 {
@@ -69,10 +104,10 @@ Output format must strictly match:
     {
       "question": "string",
       "options": {
-        "A": "string",
-        "B": "string",
-        "C": "string",
-        "D": "string"
+        "A": "string (may contain markdown code blocks)",
+        "B": "string (may contain markdown code blocks)",
+        "C": "string (may contain markdown code blocks)",
+        "D": "string (may contain markdown code blocks)"
       },
       "correctAnswer": "A" | "B" | "C" | "D",
       "code": {
@@ -83,7 +118,7 @@ Output format must strictly match:
   ]
 }
 
-No markdown. No commentary. No explanations. Produce only the object.
+No commentary. No explanations. Produce only the object.
 `,
   })
 }

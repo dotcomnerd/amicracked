@@ -16,6 +16,7 @@ import {
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Streamdown } from 'streamdown'
 import { z } from 'zod'
 
 const codeSchema = z.object({
@@ -190,7 +191,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="overflow-hidden">
+            <CardContent>
               <div className="space-y-2">
                 {(['A', 'B', 'C', 'D'] as const).map(option => {
                   const optionText = options[option] ?? '...'
@@ -214,7 +215,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                       }
                       onClick={() => handleSelect(index, option)}
                       disabled={isSubmitted}
-                      className={`w-full justify-start h-auto py-3 px-4 transition-all min-w-0 overflow-hidden ${
+                      className={`w-full justify-start h-auto py-3 px-4 transition-all ${
                         isSelected
                           ? 'ring-2 ring-primary ring-offset-2'
                           : ''
@@ -228,13 +229,19 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                           : ''
                       }`}
                     >
-                      <span className="font-semibold mr-3 min-w-[24px] shrink-0">
-                        {option}.
-                      </span>
-                      <span className="text-left flex-1 min-w-0 break-words overflow-wrap-anywhere hyphens-auto">{optionText}</span>
-                      {isSubmitted && isCorrectOption && (
-                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-500 shrink-0" />
-                      )}
+                      <div className="flex items-start gap-3 w-full min-w-0">
+                        <span className="font-semibold shrink-0 mt-0.5">
+                          {option}.
+                        </span>
+                        <div className="flex-1 min-w-0 text-left [&_p]:text-sm [&_p]:m-0 [&_p:last-child]:mb-0 [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:text-xs [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded-md">
+                          <Streamdown isAnimating={isLoading}>
+                            {optionText}
+                          </Streamdown>
+                        </div>
+                        {isSubmitted && isCorrectOption && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                        )}
+                      </div>
                     </Button>
                   )
                 })}
