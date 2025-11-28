@@ -15,12 +15,12 @@ const ubuntuSansMono = Ubuntu_Sans_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "amicracked.com",
+  title: "Am I Cracked?",
   generator: "Next.js",
   applicationName: "Am I Cracked?",
   description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
   openGraph: {
-    title: "amicracked.com",
+    title: "Am I Cracked?",
     description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
     images: [{ url: "https://amicracked.com/opengraph-image.png", width: 1200, height: 630 }],
     type: "website",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "amicracked.com",
+    title: "Am I Cracked?",
     description: "Ever wonder if you're the mystique 10x engineer? Let's find out today.",
     creator: "@notnyuma",
     images: ["https://amicracked.com/opengraph-image.png"]
