@@ -36,9 +36,7 @@ const questionSchema = z.object({
   code: codeSchema,
 })
 
-const questionsSchema = z.object({
-  questions: z.array(questionSchema).length(3),
-})
+const questionsSchema = z.array(questionSchema)
 
 type Question = z.infer<typeof questionSchema>
 
@@ -55,7 +53,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
   const { object, submit, isLoading, error } = useObject({
     api: '/api/questions',
     schema: questionsSchema,
-    initialValue: { questions: [] },
+    initialValue: [],
   })
 
   useEffect(() => {
@@ -77,7 +75,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
     }
   }
 
-  const questions = object?.questions || []
+  const questions = object || []
   const allQuestionsLoaded = questions.length === 3
   const allAnswered = Object.keys(selectedAnswers).length === 3
 
@@ -98,7 +96,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
     <div className="space-y-6">
       {isLoading && questions.length === 0 && (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex items-center gap-3">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
               <div>
@@ -128,14 +126,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
         return options ? (
           <Card
             key={index}
-            className={`transition-all duration-500 overflow-hidden ${
-              question ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{
-              animation: question
-                ? `fadeInUp 0.5s ease-out ${index * 0.2}s both`
-                : undefined,
-            }}
+            className="overflow-hidden"
           >
             {codeData?.language && codeData?.src && (
               <div className="p-4 pb-0 overflow-hidden">
@@ -282,19 +273,6 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
           </Button>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }

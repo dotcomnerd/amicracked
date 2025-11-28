@@ -19,23 +19,19 @@ const questionSchema = z.object({
   code: codeSchema.describe('Required code snippet for the question'),
 })
 
-const questionsSchema = z.object({
-  questions: z.array(questionSchema).length(3),
-})
-
 export function generateResumeQuestions(resumeText: string) {
   return streamObject({
-    model: openai('gpt-5-nano'),
-    schema: questionsSchema,
+    model: openai('gpt-4o-mini'),
+    output: 'array',
+    schema: questionSchema,
     prompt: `
-You will generate exactly 3 technical multiple-choice questions based strictly on the technologies, tools, stacks, workflows, and claims explicitly present in the uploaded text.
+You will generate exactly 3 technical multiple-choice questions based strictly on the experience, technologies, tools, stacks, workflows, and claims explicitly present in the uploaded text.
 
 Uploaded Text:
 ${resumeText}
 
 strict grounding rules:
 Only use technologies and concepts that appear directly in their text. Never introduce new domains, tools, frameworks, libraries, or languages. No assumptions and no extrapolation. No guessing. No domain expansion. Each question must be grounded in a distinct technology or claim found in the uploaded text.
-
 
 question format rules:
 - The code snippet is ALWAYS shown above the question. The question must reference THIS code snippet.
@@ -52,6 +48,7 @@ Keep questions short, direct, and confident. Avoid conversational language. Avoi
 
 coverage rules:
 All three questions must cover three different technologies or claims from the uploaded text, but you must not mention this requirement or reference that you are covering different items.
+Like if they worked on a project or did something that uses Zig, as them about Zig. etc.
 
 code snippet requirements:
 Every question must include a code snippet that serves as the CONTEXT for the question. The snippet must be:
@@ -67,7 +64,7 @@ Every question must include a code snippet that serves as the CONTEXT for the qu
   - abap,actionscript-3,ada,angular-html,angular-ts,apache,apex,apl,applescript,ara,asciidoc,asm,astro,awk,ballerina,bat,beancount,berry,bibtex,bicep,blade,bsl,c,cadence,cairo,clarity,clojure,cmake,cobol,codeowners,codeql,coffee,common-lisp,coq,cpp,crystal,csharp,css,csv,cue,cypher,d,dart,dax,desktop,diff,docker,dotenv,dream-maker,edge,elixir,elm,emacs-lisp,erb,erlang,fennel,fish,fluent,fortran-fixed-form,fortran-free-form,fsharp,gdresource,gdscript,gdshader,genie,gherkin,git-commit,git-rebase,gleam,glimmer-js,glimmer-ts,glsl,gnuplot,go,graphql,groovy,hack,haml,handlebars,haskell,haxe,hcl,hjson,hlsl,html,html-derivative,http,hurl,hxml,hy,imba,ini,java,javascript,jinja,jison,json,json5,jsonc,jsonl,jsonnet,jssm,jsx,julia,kdl,kotlin,kusto,latex,lean,less,liquid,llvm,log,logo,lua,luau,make,markdown,marko,matlab,mdc,mdx,mermaid,mipsasm,mojo,move,narrat,nextflow,nginx,nim,nix,nushell,objective-c,objective-cpp,ocaml,openscad,pascal,perl,php,pkl,plsql,po,polar,postcss,powerquery,powershell,prisma,prolog,proto,pug,puppet,purescript,python,qml,qmldir,qss,r,racket,raku,razor,reg,regexp,rel,riscv,rosmsg,rst,ruby,rust,sas,sass,scala,scheme,scss,sdbl,shaderlab,shellscript,shellsession,smalltalk,solidity,soy,sparql,splunk,sql,ssh-config,stata,stylus,svelte,swift,system-verilog,systemd,talonscript,tasl,tcl,templ,terraform,tex,toml,ts-tags,tsv,tsx,turtle,twig,typescript,typespec,typ,v,vala,vb,verilog,vhdl,viml,vue,vue-html,vue-vine,vyper,wasm,wenyan,wgsl,wikitext,wit,wolfram,xml,xsl,yaml,zenscript,zig
 
 
-The snippet should test understanding of API usage, function behavior, side effects, syntax, framework patterns, algorithms, data structures, or similar relevant mechanisms.
+The snippet should test understanding of API usage, function behavior, side effects, syntax, framework patterns, algorithms, data structures, or similar relevant mechanisms listed on their resume.
 
 The question should ask about:
 - What the code outputs or returns
@@ -76,12 +73,17 @@ The question should ask about:
 - What would happen if something in the code changed
 - Understanding of the code's behavior, not which code to write
 
-Example good questions:
+Example good questions (dont use them exactly, just use the format):
 - "What does this code output?"
 - "What is the value of result after this code executes?"
 - "What happens when processData is called?"
 - "What does line 5 do in this code?"
 - "What would happen if we changed variable x to y?"
+- "How could you optimize the performance of this code segment?"
+- "Which statement, if added, would improve error handling in this code?"
+- "Why might this function cause side effects when executed?"
+- "What would be the result if the function is called twice with the same argument?"
+- "Which part of the code could be refactored for better readability?"
 
 Example bad questions (DO NOT USE):
 - "Which code demonstrates X?" (there's only one code block shown)
@@ -97,28 +99,26 @@ answer option formatting rules:
 - Mix text and code naturally: "Call \`encode()\` method" or "Use \`\`\`javascript\nVideoEncoder.encode(frame)\n\`\`\`"
 - The markdown will be rendered, so ensure proper formatting
 
-Output format must strictly match:
+Output format must strictly match an array of 3 question objects:
 
-{
-  "questions": [
-    {
-      "question": "string",
-      "options": {
-        "A": "string (may contain markdown code blocks)",
-        "B": "string (may contain markdown code blocks)",
-        "C": "string (may contain markdown code blocks)",
-        "D": "string (may contain markdown code blocks)"
-      },
-      "correctAnswer": "A" | "B" | "C" | "D",
-      "code": {
-        "language": "string",
-        "src": "string"
-      }
+[
+  {
+    "question": "string",
+    "options": {
+      "A": "string (may contain markdown code blocks)",
+      "B": "string (may contain markdown code blocks)",
+      "C": "string (may contain markdown code blocks)",
+      "D": "string (may contain markdown code blocks)"
+    },
+    "correctAnswer": "A" | "B" | "C" | "D",
+    "code": {
+      "language": "string",
+      "src": "string"
     }
-  ]
-}
+  }
+]
 
-No commentary. No explanations. Produce only the object.
+Generate exactly 3 questions. No commentary. No explanations. Produce only the array.
 `,
   })
 }
