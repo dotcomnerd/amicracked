@@ -155,8 +155,6 @@ async function extractTextFromBuffer(buffer: Buffer): Promise<{ text: string; pa
 }
 
 export async function extractPdfText({ fileBase64 }: { fileBase64: string }) {
-  cacheLife('hours')
-
   const buffer = Buffer.from(fileBase64, 'base64')
 
   return extractTextFromBuffer(buffer)

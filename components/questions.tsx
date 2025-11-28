@@ -2,10 +2,26 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  type BundledLanguage,
+  CodeBlock,
+  CodeBlockBody,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockFilename,
+  CodeBlockFiles,
+  CodeBlockHeader,
+  CodeBlockItem,
+} from '@/components/ui/codeblock'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
+
+const codeSchema = z.object({
+  language: z.string(),
+  src: z.string(),
+})
 
 const questionSchema = z.object({
   question: z.string(),
@@ -16,6 +32,7 @@ const questionSchema = z.object({
     D: z.string(),
   }),
   correctAnswer: z.enum(['A', 'B', 'C', 'D']),
+  code: codeSchema,
 })
 
 const questionsSchema = z.object({
@@ -105,10 +122,12 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
         const selectedAnswer = selectedAnswers[index]
         const isCorrect = !!correctAnswer && selectedAnswer === correctAnswer
 
+        const codeData = partialQuestion.code
+
         return options ? (
           <Card
             key={index}
-            className={`transition-all duration-500 ${
+            className={`transition-all duration-500 overflow-hidden ${
               question ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
             style={{
@@ -117,13 +136,46 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                 : undefined,
             }}
           >
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg mb-2">
+            {codeData?.language && codeData?.src && (
+              <div className="p-4 pb-0 overflow-hidden">
+                <CodeBlock
+                  className="mb-0 max-w-full"
+                  data={[{
+                    language: codeData.language,
+                    filename: `snippet.${codeData.language}`,
+                    code: codeData.src,
+                  }]}
+                  defaultValue={codeData.language}
+                >
+                  <CodeBlockHeader>
+                    <CodeBlockFiles>
+                      {(item) => (
+                        <CodeBlockFilename key={item.language} value={item.language}>
+                          {item.language}
+                        </CodeBlockFilename>
+                      )}
+                    </CodeBlockFiles>
+                    <CodeBlockCopyButton />
+                  </CodeBlockHeader>
+                  <CodeBlockBody>
+                    {(item) => (
+                      <CodeBlockItem key={item.language} value={item.language} lineNumbers>
+                        <CodeBlockContent language={item.language as BundledLanguage}>
+                          {item.code}
+                        </CodeBlockContent>
+                      </CodeBlockItem>
+                    )}
+                  </CodeBlockBody>
+                </CodeBlock>
+              </div>
+            )}
+            <CardHeader className="overflow-hidden">
+              <div className="flex items-start justify-between gap-4 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <CardTitle className="text-lg mb-2 break-words">
                     Question {index + 1}
                   </CardTitle>
-                  <CardDescription className="text-base text-foreground break-words overflow-wrap-anywhere">
+                  <CardDescription className="text-base text-foreground break-words overflow-wrap-anywhere hyphens-auto">
                     {questionText}
                   </CardDescription>
                 </div>
@@ -138,7 +190,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-hidden">
               <div className="space-y-2">
                 {(['A', 'B', 'C', 'D'] as const).map(option => {
                   const optionText = options[option] ?? '...'
@@ -162,7 +214,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                       }
                       onClick={() => handleSelect(index, option)}
                       disabled={isSubmitted}
-                      className={`w-full justify-start h-auto py-3 px-4 transition-all ${
+                      className={`w-full justify-start h-auto py-3 px-4 transition-all min-w-0 overflow-hidden ${
                         isSelected
                           ? 'ring-2 ring-primary ring-offset-2'
                           : ''
@@ -179,7 +231,7 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                       <span className="font-semibold mr-3 min-w-[24px] shrink-0">
                         {option}.
                       </span>
-                      <span className="text-left flex-1 break-words overflow-wrap-anywhere">{optionText}</span>
+                      <span className="text-left flex-1 min-w-0 break-words overflow-wrap-anywhere hyphens-auto">{optionText}</span>
                       {isSubmitted && isCorrectOption && (
                         <CheckCircle2 className="h-4 w-4 ml-2 text-green-500 shrink-0" />
                       )}

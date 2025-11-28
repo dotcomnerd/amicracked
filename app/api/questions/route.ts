@@ -1,6 +1,11 @@
-import { streamObject } from 'ai'
 import { generateResumeQuestions } from '@/lib/cache/questions'
+import { streamObject } from 'ai'
 import { z } from 'zod'
+
+const codeSchema = z.object({
+  language: z.string(),
+  src: z.string(),
+})
 
 const questionsSchema = z.object({
   questions: z.array(
@@ -13,6 +18,7 @@ const questionsSchema = z.object({
         D: z.string(),
       }),
       correctAnswer: z.enum(['A', 'B', 'C', 'D']),
+      code: codeSchema,
     })
   ).length(3),
 })
@@ -57,27 +63,140 @@ export async function POST(req: Request) {
       const result = streamObject({
         model: openai('gpt-5-nano'),
         schema: questionsSchema,
-        prompt: `You are creating a quiz to test someone's knowledge of their own resume. Based on the following resume text, generate exactly 3 multiple choice questions.
+        prompt: `You will generate exactly 3 technical multiple-choice questions based only on what the user explicitly wrote in their uploaded text. The text may be a resume, portfolio, project list, or similar.
 
-Resume Text:
+Your job is to read their bullet points and pull out the real technologies, tools, workflows, stacks, systems, and claims they mention. Then write questions that test whether the person actually understands those specific things.
+
+Uploaded Text:
 ${resumeText}
 
-Requirements:
-1. Each question must test knowledge of specific, factual information from the resume (technologies, companies, dates, achievements, etc.)
-2. Questions should be clear and unambiguous
-3. Each question must have exactly 4 options (A, B, C, D)
-4. Only ONE option should be correct based on information explicitly stated in the resume
-5. The incorrect options (distractors) should be plausible but clearly wrong
-6. Questions should cover different aspects: technical skills, work experience, education, or achievements
-7. Make questions challenging but fair - they should test if the person actually knows their resume
+how to anchor the questions
 
-Generate 3 questions that are:
-- Specific to the resume content
-- Test factual knowledge (not opinions)
-- Have one clearly correct answer
-- Have plausible but incorrect distractors
+Only generate questions about technologies, patterns, or systems that appear directly in their text.
 
-Return exactly 3 questions in the required format.`,
+If they mention React, you can ask about React.
+
+If they mention Express + JWT, you can ask about auth flows or JWT behavior.
+
+If they mention Kubernetes, you can ask about pods.
+
+If they mention C++, you can ask about C++ memory or code they would realistically know.
+
+Do not introduce new technologies they did not mention.
+
+No assumptions. No guessing. No domain expansion.
+
+Each question must be tightly tied to a specific bullet point, claim, or project.
+
+Examples:
+
+If they say they "refactored an Express API to use JWT auth", ask a question about token lifetimes, middleware ordering, or verifying signatures.
+
+If they say they "moved a component to server-side rendering", ask about hydration or data-fetching order.
+
+If they say they "optimized something", ask about the type of optimization that makes sense for that stack.
+
+Never ask personal details.
+
+No "Where did they work?"
+
+No "What year did they graduate?"
+
+No "What city…?"
+
+Only technical content.
+
+Tone:
+
+Questions should feel clean, confident, and direct. Not robotic or stiff.
+
+code snippet rules (REQUIRED)
+
+EVERY question MUST include a code snippet. Code blocks are mandatory for all questions.
+
+Include code whenever the question tests understanding of:
+- API usage, function calls, or method behavior
+- Syntax, patterns, or language-specific features
+- Code output, behavior, or side effects
+- Framework/library usage patterns
+- Algorithm or data structure implementation
+
+Only use languages that appear in their text.
+
+If they list JavaScript or React, you may show JS/TS snippets.
+
+If they list Python, you may show Python.
+
+If they list C++, you may show C++.
+
+Never use a language they did not mention.
+
+If included, the snippet must:
+
+be 5–20 lines
+
+be syntactically valid and executable
+
+be directly relevant to testing their claimed knowledge
+
+appear as raw text only
+
+go in:
+
+code.language = "<language>"
+
+code.src = "<raw source code>"
+
+have no markdown fences
+
+The code should be realistic code they would have written or worked with based on their claims.
+
+question style
+
+Make each question feel like something a senior engineer might ask after reading their resume.
+
+Not trick questions.
+
+No overly academic theory unless they referenced that domain.
+
+Each question must have one correct answer and three plausible-but-wrong options based on the same ecosystem.
+
+All three questions must cover three different bullet points or projects from their text.
+
+output format
+
+Follow this schema exactly:
+
+{
+  "questions": [
+    {
+      "question": "string",
+      "options": {
+        "A": "string",
+        "B": "string",
+        "C": "string",
+        "D": "string"
+      },
+      "correctAnswer": "A" | "B" | "C" | "D",
+      "code": {
+        "language": "string",
+        "src": "string"
+      }
+    }
+  ]
+}
+
+code is REQUIRED. Every question must include a code block. The code field is mandatory in the schema.
+
+deliverable
+
+Produce three technical questions that test whether the person actually understands the technologies and engineering details they claimed in their own text.
+
+No speculation.
+
+No invented technologies.
+
+Only what they explicitly said they used.`,
       })
 
       return result.toTextStreamResponse()
