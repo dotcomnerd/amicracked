@@ -18,7 +18,7 @@ import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, Sand
 import type { Question } from '@/lib/store'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
-import { CheckCircle2, Code2, Loader2, Sparkles, XCircle } from 'lucide-react'
+import { CheckCircle2, Code2, Loader2, Sparkles, Timer, XCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -97,7 +97,7 @@ export default function App() {
 }
 `
 
-const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef }: { onCodeValidChange: (isValid: boolean) => void; isValid: boolean; onBadgeRef: (ref: HTMLSpanElement | null) => void }) => {
+const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, onTimeUpdate }: { onCodeValidChange: (isValid: boolean) => void; isValid: boolean; onBadgeRef: (ref: HTMLSpanElement | null) => void; timerStartTime: number | null; onTimeUpdate: (time: number) => void }) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const badgeRef = useRef<HTMLSpanElement>(null)
@@ -158,17 +158,40 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef }: { onCodeValidCha
           }}
           theme={isDark ? 'dark' : 'light'}
         >
-          <CodeEditorContent onCodeValidChange={onCodeValidChange} />
+          <CodeEditorContent onCodeValidChange={onCodeValidChange} timerStartTime={timerStartTime} onTimeUpdate={onTimeUpdate} isValid={isValid} />
         </SandboxProvider>
       </div>
     </div>
   )
 }
 
-const CodeEditorContent = ({ onCodeValidChange }: { onCodeValidChange: (isValid: boolean) => void }) => {
+const CodeEditorContent = ({ onCodeValidChange, timerStartTime, onTimeUpdate, isValid }: { onCodeValidChange: (isValid: boolean) => void; timerStartTime: number | null; onTimeUpdate: (time: number) => void; isValid: boolean }) => {
   const { sandpack } = useSandpack()
   const files = sandpack.files || {}
   const appCode = files['/App.tsx']?.code || ''
+  const [elapsedTime, setElapsedTime] = useState(0)
+
+  React.useEffect(() => {
+    if (timerStartTime === null) {
+      setElapsedTime(0)
+      return
+    }
+
+    if (isValid) {
+      const finalTime = Math.floor((Date.now() - timerStartTime) / 1000)
+      setElapsedTime(finalTime)
+      onTimeUpdate(finalTime)
+      return
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - timerStartTime) / 1000)
+      setElapsedTime(elapsed)
+      onTimeUpdate(elapsed)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [timerStartTime, isValid, onTimeUpdate])
 
   React.useEffect(() => {
     const hasCompilationError = !!sandpack.error
@@ -182,30 +205,44 @@ const CodeEditorContent = ({ onCodeValidChange }: { onCodeValidChange: (isValid:
 
     if (loadingCaseIndex !== -1 && readyCaseIndex !== -1) {
       const loadingSection = appCode.substring(loadingCaseIndex, readyCaseIndex)
-      hasLoadingBreak = loadingSection.includes('break;')
+      hasLoadingBreak = /\bbreak\s*;?/.test(loadingSection)
     }
 
     if (readyCaseIndex !== -1 && errorCaseIndex !== -1) {
       const readySection = appCode.substring(readyCaseIndex, errorCaseIndex)
-      hasReadyBreak = readySection.includes('break;')
+      hasReadyBreak = /\bbreak\s*;?/.test(readySection)
     }
 
     const isValid = !hasCompilationError && hasLoadingBreak && hasReadyBreak && appCode.length > 0
     onCodeValidChange(isValid)
   }, [appCode, sandpack.error, onCodeValidChange])
 
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <SandboxLayout>
       <SandboxTabs defaultValue="code">
         <SandboxTabsList>
-          <SandboxTabsTrigger value="code">
-            <Code2 className="h-3.5 w-3.5" />
-            Code
-          </SandboxTabsTrigger>
-          <SandboxTabsTrigger value="preview">
-            <Sparkles className="h-3.5 w-3.5" />
-            Preview
-          </SandboxTabsTrigger>
+          <div className="flex items-center gap-2 flex-1">
+            <SandboxTabsTrigger value="code">
+              <Code2 className="h-3.5 w-3.5" />
+              Code
+            </SandboxTabsTrigger>
+            <SandboxTabsTrigger value="preview">
+              <Sparkles className="h-3.5 w-3.5" />
+              Preview
+            </SandboxTabsTrigger>
+          </div>
+          {timerStartTime !== null && (
+            <div className="flex items-center gap-1.5 px-2 text-sm font-mono">
+              <Timer className="h-3.5 w-3.5" />
+              <span>{formatTime(elapsedTime)}</span>
+            </div>
+          )}
         </SandboxTabsList>
         <SandboxTabsContent value="code" className="h-[360px]">
           <SandboxCodeEditor showLineNumbers wrapContent />
@@ -261,11 +298,13 @@ export default function Home() {
     currentStep,
     resumeFile,
     favoriteLanguage,
+    secondFavoriteLanguage,
     extractedText,
     questionAnswers,
     questions,
     setResumeFile,
     setFavoriteLanguage,
+    setSecondFavoriteLanguage,
     setExtractedText,
     setQuestionAnswers,
     setQuestions,
@@ -284,6 +323,8 @@ export default function Home() {
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 })
   const [score, setScore] = useState<number | null>(null)
   const [isGrading, setIsGrading] = useState(false)
+  const [codeChallengeTime, setCodeChallengeTime] = useState<number | null>(null)
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
 
   const handleBadgeRef = useCallback((ref: HTMLSpanElement | null) => {
     badgeRef.current = ref
@@ -309,8 +350,15 @@ export default function Home() {
     if (currentStep === 4) {
       setIsCodeValid(false)
       setShowConfetti(false)
+      if (timerStartTime === null) {
+        setTimerStartTime(Date.now())
+      }
+      setCodeChallengeTime(null)
+    } else if (currentStep !== 4 && timerStartTime !== null) {
+      setTimerStartTime(null)
+      setCodeChallengeTime(null)
     }
-  }, [currentStep])
+  }, [currentStep, timerStartTime])
 
   React.useEffect(() => {
     if (currentStep === 5 && score === null && !isGrading) {
@@ -325,10 +373,12 @@ export default function Home() {
             body: JSON.stringify({
               hasResume: !!resumeFile,
               favoriteLanguage,
+              secondFavoriteLanguage,
               questionAnswers,
               questions,
               codeChallengeCompleted: true,
               extractedText,
+              codeChallengeTime,
             }),
           })
 
@@ -599,7 +649,7 @@ export default function Home() {
             </div>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 3 && !favoriteLanguage && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <div className="col-span-full">
@@ -619,8 +669,39 @@ export default function Home() {
               </div>
             )}
 
+          {currentStep === 3 && favoriteLanguage && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="col-span-full">
+                    <h3 className="text-lg font-semibold">What's your second favorite programming language?</h3>
+                  </div>
+                  {PROGRAMMING_LANGUAGES.map((language) => (
+                    <Button
+                      key={language}
+                      variant={secondFavoriteLanguage === language ? 'default' : 'outline'}
+                      onClick={() => setSecondFavoriteLanguage(language)}
+                      className="h-auto py-3"
+                      disabled={language === favoriteLanguage}
+                    >
+                      {language}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {currentStep === 4 && (
-              <CodeEditor onCodeValidChange={setIsCodeValid} isValid={isCodeValid} onBadgeRef={handleBadgeRef} />
+              <CodeEditor
+                onCodeValidChange={setIsCodeValid}
+                isValid={isCodeValid}
+                onBadgeRef={handleBadgeRef}
+                timerStartTime={timerStartTime}
+                onTimeUpdate={(time) => {
+                  if (isCodeValid && codeChallengeTime === null) {
+                    setCodeChallengeTime(time)
+                  }
+                }}
+              />
             )}
 
             {currentStep === 5 && (
@@ -683,6 +764,7 @@ export default function Home() {
                     (currentStep === 2 && extractedText && Object.keys(questionAnswers).length !== 3) ||
                     (currentStep === 2 && !extractedText && !favoriteLanguage) ||
                     (currentStep === 3 && !favoriteLanguage) ||
+                    (currentStep === 3 && favoriteLanguage && !secondFavoriteLanguage) ||
                     (currentStep === 4 && !isCodeValid)
                   }
               >

@@ -24,12 +24,14 @@ interface OnboardingState {
   currentStep: number
   resumeFile: File | null
   favoriteLanguage: string | null
+  secondFavoriteLanguage: string | null
   extractedText: string | null
   questionAnswers: Record<number, string>
   questions: Question[]
   setCurrentStep: (step: number) => void
   setResumeFile: (file: File | null) => void
   setFavoriteLanguage: (language: string) => void
+  setSecondFavoriteLanguage: (language: string) => void
   setExtractedText: (text: string | null) => void
   setQuestionAnswers: (answers: Record<number, string>) => void
   setQuestions: (questions: Question[]) => void
@@ -41,12 +43,14 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   currentStep: 1,
   resumeFile: null,
   favoriteLanguage: null,
+  secondFavoriteLanguage: null,
   extractedText: null,
   questionAnswers: {},
   questions: [],
   setCurrentStep: (step) => set({ currentStep: step }),
   setResumeFile: (file) => set({ resumeFile: file }),
   setFavoriteLanguage: (language) => set({ favoriteLanguage: language }),
+  setSecondFavoriteLanguage: (language) => set({ secondFavoriteLanguage: language }),
   setExtractedText: (text) => set({ extractedText: text }),
   setQuestionAnswers: (answers) => set({ questionAnswers: answers }),
   setQuestions: (questions) => set({ questions }),

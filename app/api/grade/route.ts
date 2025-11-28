@@ -15,9 +15,11 @@ export async function POST(req: Request) {
     const {
       hasResume,
       favoriteLanguage,
+      secondFavoriteLanguage,
       questionAnswers,
       codeChallengeCompleted,
       extractedText,
+      codeChallengeTime,
     } = body
 
     const questions = Array.isArray(body.questions) ? body.questions : []
@@ -36,7 +38,9 @@ export async function POST(req: Request) {
 Assessment Details:
 - Resume uploaded: ${hasResume ? 'Yes' : 'No'}
 - Favorite programming language: ${favoriteLanguage || 'Not selected'}
+- Second favorite programming language: ${secondFavoriteLanguage || 'Not selected'}
 - Code challenge completed: ${codeChallengeCompleted ? 'Yes' : 'No'}
+- Code challenge completion time: ${codeChallengeTime !== null && codeChallengeTime !== undefined ? `${codeChallengeTime} seconds (${Math.floor(codeChallengeTime / 60)} minutes ${codeChallengeTime % 60} seconds)` : 'N/A'}
 - Resume questions answered: ${Object.keys(questionAnswers || {}).length} out of ${questions.length}
 
 ${questionResults ? `Question Results:\n${questionResults}` : 'No resume questions were answered.'}
@@ -44,10 +48,20 @@ ${questionResults ? `Question Results:\n${questionResults}` : 'No resume questio
 ${extractedText ? `Resume content (for context):\n${extractedText.substring(0, 1000)}...` : ''}
 
 Score the developer on a scale of 0-100 based on:
-1. Code challenge completion (required to reach this point) - base score
-2. Resume upload (shows initiative) - bonus points
-3. Language selection (shows self-awareness) - bonus points
-4. Resume question accuracy (tests actual knowledge) - significant points
+1. Code challenge completion (required to reach this point) - base score of 40 points
+2. Code challenge completion time - IMPORTANT: This is a key factor in determining skill level:
+   - Very fast completion (under 60 seconds): +15-20 bonus points (shows strong debugging skills and quick problem-solving)
+   - Fast completion (60-120 seconds): +10-15 bonus points (good debugging skills)
+   - Moderate completion (2-5 minutes): +5-10 bonus points (acceptable debugging skills)
+   - Slower completion (5-10 minutes): +0-5 bonus points (basic debugging skills)
+   - Very slow completion (over 10 minutes): -0 to -5 penalty points (may indicate struggling with the problem)
+   The time taken directly reflects their debugging ability and problem-solving speed.
+3. Resume upload (shows initiative) - bonus points
+4. Language preferences (both first and second favorite) - shows self-awareness and breadth of experience:
+   - Both languages selected: +10-15 bonus points
+   - Only first language selected: +5 bonus points
+   - Neither selected: 0 points
+5. Resume question accuracy (tests actual knowledge) - significant points
 
 The score should reflect their actual technical competence and engagement. Be fair but realistic.
 A perfect score (100) should be rare and require excellent performance across all areas.
