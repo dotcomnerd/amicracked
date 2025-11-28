@@ -40,7 +40,7 @@ Only use technologies and concepts that appear directly in their text. Never int
 question format rules:
 - The code snippet is ALWAYS shown above the question. The question must reference THIS code snippet.
 - NEVER ask "which code" or "which snippet" - there is only one code block shown.
-- The question should ask ABOUT the code: what it outputs, what it does, what happens when it runs, what a specific part means, or what would happen if something changed.
+- The question should ask ABOUT the code for each question: what it outputs, what it does, what happens when it runs, why is a snippet broken, what could be done to optimize a snippet, wat a specific part means, or what would happen if something changed.
 - Questions should be in the format: "What does this code output?", "What happens when this function is called?", "What is the value of X after this code runs?", "What does line Y do?", etc.
 - The code block is the context - use it to test understanding of the code's behavior, not to ask which code to use.
 

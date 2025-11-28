@@ -6,12 +6,14 @@ import { ResumePreview } from '@/components/resume-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { ColourfulText } from '@/components/ui/colorful-text'
 import { Progress } from '@/components/ui/progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
 import { CheckCircle2, Code2, Sparkles, XCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import Confetti from 'react-confetti'
 
@@ -409,7 +411,7 @@ export default function Home() {
       )}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-sm bg-background/80 border-b border-border/20">
         <div className="flex items-center gap-2">
-          <span className="font-semibold tracking-widest text-primary/50 ">amicracked.com</span>
+          <Link href="/" className="font-semibold tracking-widest text-primary/50 hover:text-primary cursor-pointer"><ColourfulText text="amicracked.com" /></Link>
         </div>
         <ModeToggle />
       </header>

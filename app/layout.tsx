@@ -1,21 +1,40 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Ubuntu_Sans, Ubuntu_Sans_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const ubuntuSans = Ubuntu_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const ubuntuSansMono = Ubuntu_Sans_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Am I Cracked?",
-  description: "Find out how cracked you are",
+  title: "\“Am I Cracked?\”",
+  generator: "Next.js",
+  applicationName: "Am I Cracked?",
+  description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
+  openGraph: {
+    title: "\“Am I Cracked?\”",
+    description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
+    images: [{ url: "https://amicracked.com/opengraph-image.png", width: 1200, height: 630 }],
+    type: "website",
+    url: "https://amicracked.com",
+    siteName: "Am I Cracked?",
+    locale: "en_US",
+    countryName: "United States",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "\“Am I Cracked?\”",
+    description: "Ever wonder if you're the mystique 10x engineer? Let's find out today.",
+    creator: "@notnyuma",
+    images: ["https://amicracked.com/opengraph-image.png"]
+  }
 };
 
 export default function RootLayout({
@@ -26,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${ubuntuSans.variable} ${ubuntuSansMono.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
