@@ -118,17 +118,17 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
             }}
           >
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
                   <CardTitle className="text-lg mb-2">
                     Question {index + 1}
                   </CardTitle>
-                  <CardDescription className="text-base text-foreground">
+                  <CardDescription className="text-base text-foreground break-words overflow-wrap-anywhere">
                     {questionText}
                   </CardDescription>
                 </div>
                 {isSubmitted && (
-                  <div className="ml-4">
+                  <div className="ml-4 shrink-0">
                     {isCorrect ? (
                       <CheckCircle2 className="h-6 w-6 text-green-500" />
                     ) : (
@@ -176,12 +176,12 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
                           : ''
                       }`}
                     >
-                      <span className="font-semibold mr-3 min-w-[24px]">
+                      <span className="font-semibold mr-3 min-w-[24px] shrink-0">
                         {option}.
                       </span>
-                      <span className="text-left flex-1">{optionText}</span>
+                      <span className="text-left flex-1 break-words overflow-wrap-anywhere">{optionText}</span>
                       {isSubmitted && isCorrectOption && (
-                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-500 shrink-0" />
                       )}
                     </Button>
                   )
