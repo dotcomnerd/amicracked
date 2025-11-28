@@ -117,15 +117,18 @@ export const calculateFormulaBasedScore = (
   codeChallengeTime: number | null,
   correctAnswers: number,
   totalQuestions: number,
-  resumeScore: number = 0
+  resumeScore: number = 0,
+  codeChallengeGaveUp: boolean = false
 ): number => {
   let rawScore = 0
 
-  // code challenge base (35 points)
-  rawScore += CODE_CHALLENGE_BASE_SCORE
+  // code challenge base (35 points) - only if they didn't give up
+  if (!codeChallengeGaveUp) {
+    rawScore += CODE_CHALLENGE_BASE_SCORE
 
-  // time score (0-25 points)
-  rawScore += calculateTimeScore(codeChallengeTime)
+    // time score (0-25 points)
+    rawScore += calculateTimeScore(codeChallengeTime)
+  }
 
   // language score (0-17 points)
   rawScore += calculateLanguageScore(firstLanguage, secondLanguage)
@@ -137,7 +140,13 @@ export const calculateFormulaBasedScore = (
   rawScore += resumeScore
 
   // apply log-scale normalization for realistic distribution
-  const normalizedScore = normalizeScore(rawScore)
+  let normalizedScore = normalizeScore(rawScore)
+
+  // apply harsh penalty if they gave up on code challenge
+  // this ensures low-effort attempts (just picking languages) max out around 10%
+  if (codeChallengeGaveUp) {
+    normalizedScore = normalizedScore * 0.2
+  }
 
   return Math.round(normalizedScore * 10) / 10
 }

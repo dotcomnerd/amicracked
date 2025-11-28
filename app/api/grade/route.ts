@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       questionAnswers,
       codeChallengeTime,
       resumeScore,
+      codeChallengeGaveUp,
     } = body
 
     const questions = Array.isArray(body.questions) ? body.questions : []
@@ -44,26 +45,40 @@ export async function POST(req: Request) {
 
     // calculate all score components
     const languageScore = calculateLanguageScore(favoriteLanguage, secondFavoriteLanguage)
-    const timeScore = calculateTimeScore(codeChallengeTime)
+    const timeScore = codeChallengeGaveUp ? 0 : calculateTimeScore(codeChallengeTime)
     const questionScore = calculateQuestionScore(correctCount, questions.length)
     const validResumeScore = typeof resumeScore === 'number' ? Math.min(resumeScore, 30) : 0
 
     // calculate raw score before normalization
-    const rawScore = CODE_CHALLENGE_BASE_SCORE + languageScore + timeScore + questionScore + validResumeScore
+    const codeChallengePoints = codeChallengeGaveUp ? 0 : CODE_CHALLENGE_BASE_SCORE
+    const rawScore = codeChallengePoints + languageScore + timeScore + questionScore + validResumeScore
 
     // normalize using log scale
     // this ensures average performance (~50-60 raw) maps to ~50-60 final score
     let normalizedScore = normalizeScore(rawScore)
 
-    // get language tier info for the prompt
-    const firstLangInfo = favoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[favoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
-    const secondLangInfo = secondFavoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[secondFavoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
+    // apply harsh penalty if they gave up on code challenge
+    // this ensures low-effort attempts (just picking languages) max out around 10%
+    if (codeChallengeGaveUp) {
+      normalizedScore = normalizedScore * 0.2
+    }
 
-    const prompt = `You are generating a fun, brief explanation for a developer's "cracked" score. The score has already been calculated - just provide commentary.
+    // only generate AI reasoning if they have a resume or completed the coding challenge
+    const hasResume = validResumeScore > 0 || questions.length > 0
+    const completedCodingChallenge = !codeChallengeGaveUp && codeChallengeTime !== null
+    let adjustment = 0
+    let reasoning = ''
+
+    if (hasResume || completedCodingChallenge) {
+      // get language tier info for the prompt
+      const firstLangInfo = favoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[favoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
+      const secondLangInfo = secondFavoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[secondFavoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
+
+      const prompt = `You are generating a fun, brief explanation for a developer's "cracked" score. The score has already been calculated - just provide commentary.
 
 **Score Breakdown (Raw Points):**
-- Code challenge base: ${CODE_CHALLENGE_BASE_SCORE} points
-- Time bonus (${codeChallengeTime !== null ? `${codeChallengeTime}s` : 'N/A'}): ${timeScore.toFixed(1)} points
+- Code challenge base: ${codeChallengeGaveUp ? '0 (gave up)' : `${CODE_CHALLENGE_BASE_SCORE}`} points
+- Time bonus (${codeChallengeGaveUp ? 'N/A (gave up)' : codeChallengeTime !== null ? `${codeChallengeTime}s` : 'N/A'}): ${timeScore.toFixed(1)} points
 - Language score: ${languageScore.toFixed(1)} points
   - First: ${favoriteLanguage || 'None'} (Tier ${firstLangInfo?.tier || 'N/A'})
   - Second: ${secondFavoriteLanguage || 'None'} (Tier ${secondLangInfo?.tier || 'N/A'})
@@ -85,15 +100,17 @@ Also suggest a small adjustment (-5 to +5 points) if there's something notable:
 
 Most users should get 0 adjustment. Only suggest non-zero for notable cases.`
 
-    const result = await generateObject({
-      model: openai('gpt-5-nano'),
-      schema: reasoningSchema,
-      prompt,
-    })
+      const result = await generateObject({
+        model: openai('gpt-4o-mini'),
+        schema: reasoningSchema,
+        prompt,
+      })
 
-    // apply the AI's suggested adjustment (small, since we're already normalized)
-    const adjustment = result.object.adjustmentSuggestion || 0
-    normalizedScore = Math.min(Math.max(normalizedScore + adjustment, 0), 100)
+      // apply the AI's suggested adjustment (small, since we're already normalized)
+      adjustment = result.object.adjustmentSuggestion || 0
+      reasoning = result.object.reasoning || ''
+      normalizedScore = Math.min(Math.max(normalizedScore + adjustment, 0), 100)
+    }
 
     // round to 1 decimal place
     const finalScore = Math.round(normalizedScore * 10) / 10
@@ -101,11 +118,11 @@ Most users should get 0 adjustment. Only suggest non-zero for notable cases.`
     return Response.json({
       success: true,
       score: finalScore,
-      reasoning: result.object.reasoning,
+      reasoning: reasoning || `You scored ${finalScore.toFixed(1)}% based on your language selections${codeChallengeGaveUp ? ' (you gave up on the coding challenge)' : ''}.`,
       breakdown: {
         raw: rawScore,
         normalized: finalScore,
-        base: CODE_CHALLENGE_BASE_SCORE,
+        base: codeChallengeGaveUp ? 0 : CODE_CHALLENGE_BASE_SCORE,
         time: timeScore,
         language: languageScore,
         questions: questionScore,

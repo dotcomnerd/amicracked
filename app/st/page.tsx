@@ -13,21 +13,21 @@ import {
   ChainOfThoughtStep,
 } from '@/components/ui/chain-of-thought'
 import { ColourfulText } from '@/components/ui/colorful-text'
-import { Progress } from '@/components/ui/progress'
+import { RainbowProgress } from '@/components/ui/rainbow-progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
-import Grid, { type ItemConfig } from '@/lib/grid'
 import { allBrands } from '@/lib/brands'
+import Grid, { type ItemConfig } from '@/lib/grid'
 import {
   calculateFormulaBasedScore,
 } from '@/lib/scoring'
 import type { Question } from '@/lib/store'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
+import confetti from 'canvas-confetti'
 import { CheckCircle2, Code2, Loader2, Sparkles, Timer, XCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import Confetti from 'react-confetti'
 
 const TOTAL_STEPS = 5
 
@@ -82,7 +82,8 @@ const calculateCrackedScore = (
   codeChallengeTime: number | null,
   questionAnswers: Record<number, string>,
   questions: Question[],
-  resumeScore: number = 0
+  resumeScore: number = 0,
+  codeChallengeGaveUp: boolean = false
 ): number => {
   // count correct answers
   let correctCount = 0
@@ -100,7 +101,8 @@ const calculateCrackedScore = (
     codeChallengeTime,
     correctCount,
     questions.length,
-    resumeScore
+    resumeScore,
+    codeChallengeGaveUp
   )
 }
 
@@ -307,27 +309,16 @@ const getCrackedStatus = (score: number): string => {
   if (score >= 65) return 'Syntax Maestro'
   if (score >= 62) return 'Framework Whisperer'
   if (score >= 59) return 'Very Cracked'
-  if (score >= 56) return 'Dependabot Supreme'
-  if (score >= 53) return 'Merge Master'
-  if (score >= 50) return 'Solid PR Author'
-  if (score >= 47) return 'Bug Squasher'
+  if (score >= 50) return 'Veteran'
   if (score >= 44) return 'Functionally Sound'
-  if (score >= 41) return 'Moderately Cracked'
-  if (score >= 38) return 'Reliable Contributor'
   if (score >= 35) return 'Methodical Debugger'
-  if (score >= 32) return 'Ship-It Beginner'
-  if (score >= 29) return 'Somewhat Cracked'
-  if (score >= 26) return 'Needs More Coffee'
-  if (score >= 23) return 'Syntax Survivor'
-  if (score >= 20) return 'Stack Overflow Explorer'
-  if (score >= 17) return 'Junior Enthusiast'
-  if (score >= 14) return 'Learning Looper'
-  if (score >= 11) return 'Tutorial Follower'
-  if (score >= 8) return 'Bootcamp Grad'
-  if (score >= 5) return 'Wrote Some Code'
+  if (score >= 32) return '“Just Ship-It” Beginner'
+  if (score >= 29) return 'Not Quite Cracked'
+  if (score >= 15) return 'An earnest amateur'
   if (score >= 2) return 'Just Here For The Memes'
-  if (score === 1) return 'Pressed a Button'
-  return 'Not Very Cracked'
+  if (score >= 1) return 'Pressed a Button'
+  if (score > 0) return 'Barely Tried'
+  return 'Didn\'t Even Try'
 }
 
 export default function Home() {
@@ -355,15 +346,13 @@ export default function Home() {
   const [dragActive, setDragActive] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isCodeValid, setIsCodeValid] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [confettiSource, setConfettiSource] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
-  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 })
   const [score, setScore] = useState<number | null>(null)
   const [isGrading, setIsGrading] = useState(false)
   const [codeChallengeTime, setCodeChallengeTime] = useState<number | null>(null)
   const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
   const [resumeScore, setResumeScore] = useState<number>(0)
   const [isEvaluatingResume, setIsEvaluatingResume] = useState(false)
+  const [codeChallengeGaveUp, setCodeChallengeGaveUp] = useState(false)
 
   const handleBadgeRef = useCallback((ref: HTMLSpanElement | null) => {
     badgeRef.current = ref
@@ -373,22 +362,11 @@ export default function Home() {
     setQuestions(loadedQuestions)
   }, [])
 
-  React.useEffect(() => {
-    const updateDimensions = () => {
-      setWindowDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      })
-    }
-    updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    return () => window.removeEventListener('resize', updateDimensions)
-  }, [])
 
   React.useEffect(() => {
     if (currentStep === 4) {
       setIsCodeValid(false)
-      setShowConfetti(false)
+      setCodeChallengeGaveUp(false)
       if (timerStartTime === null) {
         setTimerStartTime(Date.now())
       }
@@ -401,6 +379,15 @@ export default function Home() {
 
   React.useEffect(() => {
     if (currentStep === 5 && score === null && !isGrading) {
+      const hasResume = !!extractedText || resumeScore > 0
+      const completedCodingChallenge = !codeChallengeGaveUp && codeChallengeTime !== null
+
+      // skip API call if they only selected languages (no resume, gave up on coding challenge)
+      if (!hasResume && !completedCodingChallenge) {
+        setScore(calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore, codeChallengeGaveUp))
+        return
+      }
+
       setIsGrading(true)
       const gradeUser = async () => {
         try {
@@ -416,6 +403,7 @@ export default function Home() {
               questions,
               codeChallengeTime,
               resumeScore,
+              codeChallengeGaveUp,
             }),
           })
 
@@ -429,33 +417,47 @@ export default function Home() {
           }
         } catch (error) {
           console.error('Error grading:', error)
-          setScore(calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore))
+          setScore(calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore, codeChallengeGaveUp))
         } finally {
           setIsGrading(false)
         }
       }
       gradeUser()
     }
-  }, [currentStep, score, isGrading, favoriteLanguage, secondFavoriteLanguage, questionAnswers, questions, codeChallengeTime, resumeScore])
+  }, [currentStep, score, isGrading, favoriteLanguage, secondFavoriteLanguage, questionAnswers, questions, codeChallengeTime, resumeScore, codeChallengeGaveUp, extractedText])
 
   React.useEffect(() => {
-    if (isCodeValid && currentStep === 4 && badgeRef.current) {
-      const rect = badgeRef.current.getBoundingClientRect()
-      const source = {
-        x: rect.left,
-        y: rect.top,
-        w: rect.width,
-        h: rect.height,
+    if (score !== null && !isGrading && currentStep === 5) {
+      const end = Date.now() + 5 * 1000
+      const colors = ['#83B320', '#2FC36A', '#2AA9D2', '#0470CA', '#6B0AFF', '#B700DA', '#DA00AB', '#E6405C', '#E8623F', '#F9812F', '#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3']
+
+      const frame = () => {
+        const randomColor1 = colors[Math.floor(Math.random() * colors.length)]
+        const randomColor2 = colors[Math.floor(Math.random() * colors.length)]
+
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: [randomColor1],
+        })
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: [randomColor2],
+        })
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame)
+        }
       }
-      setConfettiSource(source)
-      setShowConfetti(true)
-      const timer = setTimeout(() => {
-        setShowConfetti(false)
-        setConfettiSource(null)
-      }, 2000)
-      return () => clearTimeout(timer)
+
+      frame()
     }
-  }, [isCodeValid, currentStep])
+  }, [score, isGrading, currentStep])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -570,7 +572,7 @@ export default function Home() {
   }
 
   const progress = (currentStep / TOTAL_STEPS) * 100
-  const finalScore = score ?? calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore)
+  const finalScore = score ?? calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore, codeChallengeGaveUp)
   const status = getCrackedStatus(finalScore)
 
   return (
@@ -578,20 +580,6 @@ export default function Home() {
       <div className="absolute inset-0 z-0">
         <Grid gridSize={120} renderItem={GridCell} />
       </div>
-      {showConfetti && windowDimensions.width > 0 && confettiSource && (
-        <Confetti
-          width={windowDimensions.width}
-          height={windowDimensions.height}
-          recycle={false}
-          numberOfPieces={300}
-          confettiSource={confettiSource}
-          initialVelocityX={15}
-          initialVelocityY={20}
-          gravity={0.8}
-          wind={0.05}
-          friction={0.99}
-        />
-      )}
       <header className="fixed top-0 left-0 right-0 z-[99999] flex items-center justify-between px-6 py-4 backdrop-blur-sm bg-background/80 border-b border-border/20">
         <div className="flex items-center gap-2">
           <Link href="/" className="font-semibold tracking-widest text-primary/50 hover:text-primary cursor-pointer"><ColourfulText text="amicracked.com" /></Link>
@@ -613,7 +601,7 @@ export default function Home() {
                 {String(currentStep).padStart(2, '0')}
               </div>
             </div>
-            <Progress value={progress} className="mt-4 h-2" />
+            <RainbowProgress value={progress} className="mt-4 h-4" />
           </CardHeader>
 
         <CardContent className="space-y-3">
@@ -828,6 +816,18 @@ export default function Home() {
                   Skip
                 </Button>
               )}
+                {currentStep === 4 && (
+                  <Button
+                    variant="outline"
+                    className="text-sm px-3 py-2 h-auto text-muted-foreground"
+                    onClick={() => {
+                      setCodeChallengeGaveUp(true)
+                      nextStep()
+                    }}
+                  >
+                    Give Up
+                  </Button>
+                )}
               <Button
                   variant="outline"
                   className="text-sm px-3 py-2 h-auto"
@@ -837,7 +837,7 @@ export default function Home() {
                     (currentStep === 2 && !extractedText && !favoriteLanguage) ||
                     (currentStep === 3 && !favoriteLanguage) ||
                     (currentStep === 3 && favoriteLanguage && !secondFavoriteLanguage) ||
-                    (currentStep === 4 && !isCodeValid)
+                    (currentStep === 4 && !isCodeValid && !codeChallengeGaveUp)
                   }
               >
                 Next
@@ -850,6 +850,7 @@ export default function Home() {
                   onClick={() => {
                     setScore(null)
                     setIsGrading(false)
+                    setCodeChallengeGaveUp(false)
                     useOnboardingStore.getState().setCurrentStep(1)
                   }}
             >
