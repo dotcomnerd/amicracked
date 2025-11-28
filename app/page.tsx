@@ -79,7 +79,7 @@ export default function LandingPage() {
                   size="default"
                   className="text-sm px-3 py-2 h-auto"
                 >
-                  <Link href="/index" prefetch={true}>
+                  <Link href="/st" prefetch={true}>
                     Start Quiz
                     <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
