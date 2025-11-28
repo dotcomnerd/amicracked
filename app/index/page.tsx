@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ColourfulText } from '@/components/ui/colorful-text'
 import { Progress } from '@/components/ui/progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
+import type { Question } from '@/lib/store'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
 import { CheckCircle2, Code2, Sparkles, XCircle } from 'lucide-react'
@@ -35,30 +36,26 @@ const PROGRAMMING_LANGUAGES = [
   'Other',
 ]
 
-const calculateCrackedScore = (hasResume: boolean, language: string | null): number => {
+const calculateCrackedScore = (
+  hasResume: boolean,
+  language: string | null,
+  questionAnswers: Record<number, string>,
+  hasExtractedText: boolean
+): number => {
   let score = 0
 
+  score += 40
+
   if (hasResume) {
-    score += 40
+    score += 20
   }
 
   if (language) {
-    const languageScores: Record<string, number> = {
-      'Rust': 30,
-      'Go': 25,
-      'TypeScript': 25,
-      'C++': 20,
-      'Swift': 20,
-      'Kotlin': 20,
-      'JavaScript': 15,
-      'Python': 15,
-      'Java': 10,
-      'C#': 10,
-      'Ruby': 10,
-      'PHP': 5,
-      'Other': 5,
-    }
-    score += languageScores[language] || 5
+    score += 10
+  }
+
+  if (hasExtractedText && Object.keys(questionAnswers).length === 3) {
+    score += 30
   }
 
   return Math.min(score, 100)
@@ -232,12 +229,14 @@ export default function Home() {
     pdfScreenshot,
     pdfImages,
     questionAnswers,
+    questions,
     setResumeFile,
     setFavoriteLanguage,
     setExtractedText,
     setPdfScreenshot,
     setPdfImages,
     setQuestionAnswers,
+    setQuestions,
     setCurrentStep,
     nextStep,
     previousStep
@@ -251,9 +250,15 @@ export default function Home() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiSource, setConfettiSource] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 })
+  const [score, setScore] = useState<number | null>(null)
+  const [isGrading, setIsGrading] = useState(false)
 
   const handleBadgeRef = useCallback((ref: HTMLSpanElement | null) => {
     badgeRef.current = ref
+  }, [])
+
+  const handleQuestionsLoaded = useCallback((loadedQuestions: Question[]) => {
+    setQuestions(loadedQuestions)
   }, [])
 
   React.useEffect(() => {
@@ -274,6 +279,45 @@ export default function Home() {
       setShowConfetti(false)
     }
   }, [currentStep])
+
+  React.useEffect(() => {
+    if (currentStep === 5 && score === null && !isGrading) {
+      setIsGrading(true)
+      const gradeUser = async () => {
+        try {
+          const response = await fetch('/api/grade', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              hasResume: !!resumeFile,
+              favoriteLanguage,
+              questionAnswers,
+              questions,
+              codeChallengeCompleted: true,
+              extractedText,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to grade')
+          }
+
+          const data = await response.json()
+          if (data.success) {
+            setScore(data.score)
+          }
+        } catch (error) {
+          console.error('Error grading:', error)
+          setScore(calculateCrackedScore(!!resumeFile, favoriteLanguage, questionAnswers, !!extractedText))
+        } finally {
+          setIsGrading(false)
+        }
+      }
+      gradeUser()
+    }
+  }, [currentStep, score, isGrading, resumeFile, favoriteLanguage, questionAnswers, questions, extractedText])
 
   React.useEffect(() => {
     if (isCodeValid && currentStep === 4 && badgeRef.current) {
@@ -390,8 +434,8 @@ export default function Home() {
   }
 
   const progress = (currentStep / TOTAL_STEPS) * 100
-  const score = calculateCrackedScore(!!resumeFile, favoriteLanguage)
-  const status = getCrackedStatus(score)
+  const finalScore = score ?? calculateCrackedScore(!!resumeFile, favoriteLanguage, questionAnswers, !!extractedText)
+  const status = getCrackedStatus(finalScore)
 
   return (
     <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/20">
@@ -510,6 +554,7 @@ export default function Home() {
                   onComplete={(answers) => {
                     setQuestionAnswers(answers)
                   }}
+                  onQuestionsLoaded={handleQuestionsLoaded}
                 />
               </div>
             )}
@@ -560,70 +605,27 @@ export default function Home() {
 
             {currentStep === 5 && (
             <div className="space-y-6 text-center py-8">
-              <div className="space-y-2">
-                <h3 className="text-2xl font-semibold">You Are</h3>
-                <div className="text-4xl font-bold text-primary">{status}</div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-5xl font-bold">{score}%</div>
-                <div className="text-sm text-muted-foreground">Cracked Score</div>
-              </div>
-
-              <div className="pt-4 border-t space-y-4">
-                <div className="text-sm text-muted-foreground space-y-1">
-                  {resumeFile && <p>Resume uploaded: +40 points</p>}
-                  {favoriteLanguage && (
-                    <p>Favorite language: {favoriteLanguage}</p>
-                  )}
-                </div>
-                  {(pdfScreenshot || pdfImages.length > 0) && (
-                    <div className="text-left mt-4">
-                      <h4 className="text-sm font-semibold mb-2">
-                        Resume Images ({pdfImages.length > 0 ? pdfImages.length : 1}):
-                      </h4>
-                      <div className="space-y-3">
-                        {pdfScreenshot && (
-                          <div className="bg-muted p-2 rounded-lg overflow-hidden">
-                            <img
-                              src={`data:image/png;base64,${pdfScreenshot}`}
-                              alt="PDF preview"
-                              className="w-full h-auto max-h-96 object-contain rounded"
-                            />
-                          </div>
-                        )}
-                        {pdfImages.length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {pdfImages.map((img, idx) => (
-                              <div key={idx} className="bg-muted p-2 rounded-lg overflow-hidden">
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  Page {img.page}, Image {img.index}
-                                  {img.width > 0 && img.height > 0 && (
-                                    <span className="ml-2">({img.width}×{img.height})</span>
-                                  )}
-                                </div>
-                                <img
-                                  src={`data:image/png;base64,${img.base64}`}
-                                  alt={`Page ${img.page} Image ${img.index}`}
-                                  className="w-full h-auto max-h-64 object-contain rounded"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                {extractedText && (
-                  <div className="text-left mt-4">
-                    <h4 className="text-sm font-semibold mb-2">Extracted Resume Text:</h4>
-                    <div className="bg-muted p-4 rounded-lg max-h-64 overflow-y-auto">
-                      <pre className="text-xs whitespace-pre-wrap font-mono">{extractedText}</pre>
+                {isGrading ? (
+                  <div className="space-y-4">
+                    <div className="text-lg text-muted-foreground">Calculating your score...</div>
+                    <div className="flex justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                     </div>
                   </div>
+                ) : (
+                  <>
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-semibold">You Are</h3>
+                        <div className="text-4xl font-bold text-primary">{status}</div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="text-5xl font-bold">{finalScore}%</div>
+                        <div className="text-sm text-muted-foreground">Cracked Score</div>
+                      </div>
+                  </>
                 )}
               </div>
-            </div>
           )}
         </CardContent>
 
@@ -660,7 +662,11 @@ export default function Home() {
             </div>
           ) : (
             <Button
-              onClick={() => useOnboardingStore.getState().setCurrentStep(1)}
+                  onClick={() => {
+                    setScore(null)
+                    setIsGrading(false)
+                    useOnboardingStore.getState().setCurrentStep(1)
+                  }}
             >
               Start Over
             </Button>

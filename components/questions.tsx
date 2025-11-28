@@ -43,12 +43,14 @@ type Question = z.infer<typeof questionSchema>
 interface QuestionsProps {
   resumeText: string
   onComplete?: (answers: Record<number, string>) => void
+  onQuestionsLoaded?: (questions: Question[]) => void
 }
 
-export function Questions({ resumeText, onComplete }: QuestionsProps) {
+export function Questions({ resumeText, onComplete, onQuestionsLoaded }: QuestionsProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
   const [submittedAnswers, setSubmittedAnswers] = useState<Record<number, boolean>>({})
   const hasSubmittedRef = useRef(false)
+  const hasLoadedQuestionsRef = useRef(false)
 
   const { object, submit, isLoading, error } = useObject({
     api: '/api/questions',
@@ -59,9 +61,22 @@ export function Questions({ resumeText, onComplete }: QuestionsProps) {
   useEffect(() => {
     if (resumeText && !hasSubmittedRef.current && !isLoading) {
       hasSubmittedRef.current = true
+      hasLoadedQuestionsRef.current = false
       submit({ resumeText })
     }
   }, [resumeText, isLoading, submit])
+
+  useEffect(() => {
+    if (object && Array.isArray(object) && object.length === 3 && onQuestionsLoaded && !hasLoadedQuestionsRef.current) {
+      const validQuestions = (object as unknown[]).filter((q): q is Question => {
+        return q !== undefined && q !== null && typeof q === 'object' && 'question' in q && 'correctAnswer' in q
+      })
+      if (validQuestions.length === 3) {
+        hasLoadedQuestionsRef.current = true
+        onQuestionsLoaded(validQuestions)
+      }
+    }
+  }, [object, onQuestionsLoaded])
 
   const handleSelect = (questionIndex: number, answer: string) => {
     if (submittedAnswers[questionIndex]) return
