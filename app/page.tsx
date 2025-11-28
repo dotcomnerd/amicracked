@@ -15,7 +15,7 @@ const allBrands = Object.values(icons).map((icon) => ({
   name: icon.title,
   slug: icon.slug,
   url: `https://cdn.simpleicons.org/${icon.slug}`,
-}))
+})).sort(() => Math.random() - 0.5)
 
 const GridCell = ({ gridIndex }: ItemConfig) => {
   const brand = allBrands[gridIndex % allBrands.length]
@@ -34,7 +34,7 @@ const GridCell = ({ gridIndex }: ItemConfig) => {
 
   return (
     <div
-      className={`absolute inset-1 flex items-center justify-center ${colorClass} border rounded-lg`}
+      className={`absolute inset-1 flex items-center justify-center dark:brightness-50 brightness-100 ${colorClass} border rounded-lg`}
     >
       <img
         src={brand.url}

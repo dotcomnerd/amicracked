@@ -15,6 +15,10 @@ import {
 import { ColourfulText } from '@/components/ui/colorful-text'
 import { Progress } from '@/components/ui/progress'
 import { SandboxCodeEditor, SandboxLayout, SandboxPreview, SandboxProvider, SandboxTabs, SandboxTabsContent, SandboxTabsList, SandboxTabsTrigger } from '@/components/ui/sandbox'
+import Grid, { type ItemConfig } from '@/lib/grid'
+import {
+  calculateFormulaBasedScore,
+} from '@/lib/scoring'
 import type { Question } from '@/lib/store'
 import { useOnboardingStore } from '@/lib/store'
 import { useSandpack } from '@codesandbox/sandpack-react'
@@ -23,8 +27,44 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import Confetti from 'react-confetti'
+import * as icons from 'simple-icons'
 
 const TOTAL_STEPS = 5
+
+const allBrands = Object.values(icons).map((icon) => ({
+  name: icon.title,
+  slug: icon.slug,
+  url: `https://cdn.simpleicons.org/${icon.slug}`,
+})).sort(() => Math.random() - 0.5)
+
+const GridCell = ({ gridIndex }: ItemConfig) => {
+  const brand = allBrands[gridIndex % allBrands.length]
+  const colors = [
+    'bg-card/20 border-border/30',
+    'bg-muted/20 border-border/30',
+    'bg-accent/20 border-border/30',
+    'bg-secondary/20 border-border/30',
+    'bg-card/30 border-border/40',
+    'bg-muted/30 border-border/40',
+    'bg-accent/30 border-border/40',
+    'bg-secondary/30 border-border/40',
+  ]
+
+  const colorClass = colors[gridIndex % colors.length]
+
+  return (
+    <div
+      className={`absolute inset-1 flex items-center justify-center dark:brightness-50 brightness-100 ${colorClass} border rounded-lg`}
+    >
+      <img
+        src={brand.url}
+        alt={brand.name}
+        className="w-12 h-12 object-contain"
+        draggable={false}
+      />
+    </div>
+  )
+}
 
 const PROGRAMMING_LANGUAGES = [
   'JavaScript',
@@ -43,28 +83,31 @@ const PROGRAMMING_LANGUAGES = [
 ]
 
 const calculateCrackedScore = (
-  hasResume: boolean,
-  language: string | null,
+  favoriteLanguage: string | null,
+  secondFavoriteLanguage: string | null,
+  codeChallengeTime: number | null,
   questionAnswers: Record<number, string>,
-  hasExtractedText: boolean
+  questions: Question[],
+  resumeScore: number = 0
 ): number => {
-  let score = 0
-
-  score += 40
-
-  if (hasResume) {
-    score += 20
+  // count correct answers
+  let correctCount = 0
+  if (questions.length > 0) {
+    questions.forEach((q, idx) => {
+      if (questionAnswers[idx] === q.correctAnswer) {
+        correctCount++
+      }
+    })
   }
 
-  if (language) {
-    score += 10
-  }
-
-  if (hasExtractedText && Object.keys(questionAnswers).length === 3) {
-    score += 30
-  }
-
-  return Math.min(score, 100)
+  return calculateFormulaBasedScore(
+    favoriteLanguage,
+    secondFavoriteLanguage,
+    codeChallengeTime,
+    correctCount,
+    questions.length,
+    resumeScore
+  )
 }
 
 const DEFAULT_CODE = `import React from 'react';
@@ -325,6 +368,8 @@ export default function Home() {
   const [isGrading, setIsGrading] = useState(false)
   const [codeChallengeTime, setCodeChallengeTime] = useState<number | null>(null)
   const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
+  const [resumeScore, setResumeScore] = useState<number>(0)
+  const [isEvaluatingResume, setIsEvaluatingResume] = useState(false)
 
   const handleBadgeRef = useCallback((ref: HTMLSpanElement | null) => {
     badgeRef.current = ref
@@ -371,14 +416,12 @@ export default function Home() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              hasResume: !!resumeFile,
               favoriteLanguage,
               secondFavoriteLanguage,
               questionAnswers,
               questions,
-              codeChallengeCompleted: true,
-              extractedText,
               codeChallengeTime,
+              resumeScore,
             }),
           })
 
@@ -392,14 +435,14 @@ export default function Home() {
           }
         } catch (error) {
           console.error('Error grading:', error)
-          setScore(calculateCrackedScore(!!resumeFile, favoriteLanguage, questionAnswers, !!extractedText))
+          setScore(calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore))
         } finally {
           setIsGrading(false)
         }
       }
       gradeUser()
     }
-  }, [currentStep, score, isGrading, resumeFile, favoriteLanguage, questionAnswers, questions, extractedText])
+  }, [currentStep, score, isGrading, favoriteLanguage, secondFavoriteLanguage, questionAnswers, questions, codeChallengeTime, resumeScore])
 
   React.useEffect(() => {
     if (isCodeValid && currentStep === 4 && badgeRef.current) {
@@ -453,6 +496,8 @@ export default function Home() {
       if (data.success) {
         if (data.full_text) {
           setExtractedText(data.full_text)
+          // evaluate resume prestige in the background
+          evaluateResume(data.full_text)
         }
       }
     } catch (error) {
@@ -460,6 +505,30 @@ export default function Home() {
       setExtractedText(null)
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const evaluateResume = async (text: string) => {
+    setIsEvaluatingResume(true)
+    try {
+      const response = await fetch('/api/resume-score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ extractedText: text }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && typeof data.score === 'number') {
+          setResumeScore(data.score)
+        }
+      }
+    } catch (error) {
+      console.error('Error evaluating resume:', error)
+    } finally {
+      setIsEvaluatingResume(false)
     }
   }
 
@@ -486,6 +555,7 @@ export default function Home() {
   const handleSkip = () => {
     setResumeFile(null)
     setExtractedText(null)
+    setResumeScore(0)
     setCurrentStep(extractedText ? 3 : 2)
   }
 
@@ -506,11 +576,14 @@ export default function Home() {
   }
 
   const progress = (currentStep / TOTAL_STEPS) * 100
-  const finalScore = score ?? calculateCrackedScore(!!resumeFile, favoriteLanguage, questionAnswers, !!extractedText)
+  const finalScore = score ?? calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore)
   const status = getCrackedStatus(finalScore)
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/20">
+    <div className="relative w-screen min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="absolute inset-0 z-0">
+        <Grid gridSize={120} renderItem={GridCell} />
+      </div>
       {showConfetti && windowDimensions.width > 0 && confettiSource && (
         <Confetti
           width={windowDimensions.width}
@@ -525,14 +598,14 @@ export default function Home() {
           friction={0.99}
         />
       )}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-sm bg-background/80 border-b border-border/20">
+      <header className="fixed top-0 left-0 right-0 z-[99999] flex items-center justify-between px-6 py-4 backdrop-blur-sm bg-background/80 border-b border-border/20">
         <div className="flex items-center gap-2">
           <Link href="/" className="font-semibold tracking-widest text-primary/50 hover:text-primary cursor-pointer"><ColourfulText text="amicracked.com" /></Link>
         </div>
         <ModeToggle />
       </header>
 
-      <main className="flex min-h-screen items-center justify-center p-4 pt-20">
+      <main className="relative z-50 flex min-h-screen items-center justify-center p-4 pt-20">
         <Card className="w-full max-w-2xl shadow-lg border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
@@ -583,6 +656,7 @@ export default function Home() {
                       onClick={() => {
                         setResumeFile(null)
                         setExtractedText(null)
+                        setResumeScore(0)
                         fileInputRef.current?.click()
                       }}
                       disabled={isProcessing}

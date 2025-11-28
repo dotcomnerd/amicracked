@@ -21,7 +21,7 @@ const questionSchema = z.object({
 
 export function generateResumeQuestions(resumeText: string) {
   return streamObject({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-5-nano'),
     output: 'array',
     schema: questionSchema,
     prompt: `

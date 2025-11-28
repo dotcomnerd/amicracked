@@ -1,86 +1,117 @@
+import {
+  calculateLanguageScore,
+  calculateQuestionScore,
+  calculateTimeScore,
+  CODE_CHALLENGE_BASE_SCORE,
+  LANGUAGE_DIFFICULTY_TIERS,
+  normalizeScore,
+} from '@/lib/scoring'
 import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
 export const maxDuration = 30
 
-const gradeSchema = z.object({
-  score: z.number().min(0).max(100).describe('The cracked score from 0-100'),
-  reasoning: z.string().describe('Brief explanation of the score'),
+const reasoningSchema = z.object({
+  reasoning: z.string().describe('Brief, fun explanation of the final score incorporating all factors'),
+  adjustmentSuggestion: z.number().min(-5).max(5).describe('Optional small adjustment (-5 to +5) based on overall impression'),
 })
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const {
-      hasResume,
       favoriteLanguage,
       secondFavoriteLanguage,
       questionAnswers,
-      codeChallengeCompleted,
-      extractedText,
       codeChallengeTime,
+      resumeScore,
     } = body
 
     const questions = Array.isArray(body.questions) ? body.questions : []
 
-    let questionResults = ''
+    // calculate question accuracy
+    let correctCount = 0
+    const questionResults: string[] = []
     if (questions.length > 0 && questionAnswers) {
       questions.forEach((q: { question: string; correctAnswer: string }, idx: number) => {
         const userAnswer = questionAnswers[idx]
         const isCorrect = userAnswer === q.correctAnswer
-        questionResults += `Question ${idx + 1}: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (User: ${userAnswer || 'No answer'}, Correct: ${q.correctAnswer})\n`
+        if (isCorrect) correctCount++
+        questionResults.push(`Q${idx + 1}: ${isCorrect ? 'CORRECT' : 'WRONG'}`)
       })
     }
 
-    const prompt = `You are grading a developer's "cracked" score based on their performance in a technical assessment.
+    // calculate all score components
+    const languageScore = calculateLanguageScore(favoriteLanguage, secondFavoriteLanguage)
+    const timeScore = calculateTimeScore(codeChallengeTime)
+    const questionScore = calculateQuestionScore(correctCount, questions.length)
+    const validResumeScore = typeof resumeScore === 'number' ? Math.min(resumeScore, 30) : 0
 
-Assessment Details:
-- Resume uploaded: ${hasResume ? 'Yes' : 'No'}
-- Favorite programming language: ${favoriteLanguage || 'Not selected'}
-- Second favorite programming language: ${secondFavoriteLanguage || 'Not selected'}
-- Code challenge completed: ${codeChallengeCompleted ? 'Yes' : 'No'}
-- Code challenge completion time: ${codeChallengeTime !== null && codeChallengeTime !== undefined ? `${codeChallengeTime} seconds (${Math.floor(codeChallengeTime / 60)} minutes ${codeChallengeTime % 60} seconds)` : 'N/A'}
-- Resume questions answered: ${Object.keys(questionAnswers || {}).length} out of ${questions.length}
+    // calculate raw score before normalization
+    const rawScore = CODE_CHALLENGE_BASE_SCORE + languageScore + timeScore + questionScore + validResumeScore
 
-${questionResults ? `Question Results:\n${questionResults}` : 'No resume questions were answered.'}
+    // normalize using log scale
+    // this ensures average performance (~50-60 raw) maps to ~50-60 final score
+    let normalizedScore = normalizeScore(rawScore)
 
-${extractedText ? `Resume content (for context):\n${extractedText.substring(0, 1000)}...` : ''}
+    // get language tier info for the prompt
+    const firstLangInfo = favoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[favoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
+    const secondLangInfo = secondFavoriteLanguage ? LANGUAGE_DIFFICULTY_TIERS[secondFavoriteLanguage] || LANGUAGE_DIFFICULTY_TIERS['Other'] : null
 
-Score the developer on a scale of 0-100 based on:
-1. Code challenge completion (required to reach this point) - base score of 40 points
-2. Code challenge completion time - IMPORTANT: This is a key factor in determining skill level:
-   - Very fast completion (under 60 seconds): +15-20 bonus points (shows strong debugging skills and quick problem-solving)
-   - Fast completion (60-120 seconds): +10-15 bonus points (good debugging skills)
-   - Moderate completion (2-5 minutes): +5-10 bonus points (acceptable debugging skills)
-   - Slower completion (5-10 minutes): +0-5 bonus points (basic debugging skills)
-   - Very slow completion (over 10 minutes): -0 to -5 penalty points (may indicate struggling with the problem)
-   The time taken directly reflects their debugging ability and problem-solving speed.
-3. Resume upload (shows initiative) - bonus points
-4. Language preferences (both first and second favorite) - shows self-awareness and breadth of experience:
-   - Both languages selected: +10-15 bonus points
-   - Only first language selected: +5 bonus points
-   - Neither selected: 0 points
-5. Resume question accuracy (tests actual knowledge) - significant points
+    const prompt = `You are generating a fun, brief explanation for a developer's "cracked" score. The score has already been calculated - just provide commentary.
 
-The score should reflect their actual technical competence and engagement. Be fair but realistic.
-A perfect score (100) should be rare and require excellent performance across all areas.
-A good score (70-85) should reflect solid performance.
-An average score (50-69) should reflect basic completion.
-A low score (0-49) should reflect poor performance or incomplete assessment.
+**Score Breakdown (Raw Points):**
+- Code challenge base: ${CODE_CHALLENGE_BASE_SCORE} points
+- Time bonus (${codeChallengeTime !== null ? `${codeChallengeTime}s` : 'N/A'}): ${timeScore.toFixed(1)} points
+- Language score: ${languageScore.toFixed(1)} points
+  - First: ${favoriteLanguage || 'None'} (Tier ${firstLangInfo?.tier || 'N/A'})
+  - Second: ${secondFavoriteLanguage || 'None'} (Tier ${secondLangInfo?.tier || 'N/A'})
+- Question accuracy (${correctCount}/${questions.length}): ${questionScore.toFixed(1)} points
+- Resume prestige: ${validResumeScore.toFixed(1)} points
 
-Return a score from 0-100 and a brief reasoning.`
+**Raw Total: ${rawScore.toFixed(1)} points** → **Normalized Score: ${normalizedScore.toFixed(1)}/100**
+
+${questionResults.length > 0 ? `Question results: ${questionResults.join(', ')}` : 'No resume questions answered.'}
+
+Generate a brief, witty explanation (2-3 sentences) that summarizes their performance. Be playful but honest.
+
+Also suggest a small adjustment (-5 to +5 points) if there's something notable:
+- +3 to +5: Exceptional combination (e.g., Rust + Go dev who aced everything in under 30s)
+- +1 to +2: Good synergy (e.g., interesting language combo, impressive speed)
+- 0: Standard performance, no adjustment needed
+- -1 to -2: Minor red flags (e.g., picked "Other" twice, suspiciously slow)
+- -3 to -5: Something off (e.g., completed in 1 second suggesting gaming, picked same language twice somehow)
+
+Most users should get 0 adjustment. Only suggest non-zero for notable cases.`
 
     const result = await generateObject({
-      model: openai('gpt-4o-mini'),
-      schema: gradeSchema,
+      model: openai('gpt-5-nano'),
+      schema: reasoningSchema,
       prompt,
     })
 
+    // apply the AI's suggested adjustment (small, since we're already normalized)
+    const adjustment = result.object.adjustmentSuggestion || 0
+    normalizedScore = Math.min(Math.max(normalizedScore + adjustment, 0), 100)
+
+    // round to 1 decimal place
+    const finalScore = Math.round(normalizedScore * 10) / 10
+
     return Response.json({
       success: true,
-      score: result.object.score,
+      score: finalScore,
       reasoning: result.object.reasoning,
+      breakdown: {
+        raw: rawScore,
+        normalized: finalScore,
+        base: CODE_CHALLENGE_BASE_SCORE,
+        time: timeScore,
+        language: languageScore,
+        questions: questionScore,
+        resume: validResumeScore,
+        adjustment,
+      },
     })
   } catch (error) {
     console.error('Error grading:', error)
