@@ -262,15 +262,11 @@ export default function Home() {
     resumeFile,
     favoriteLanguage,
     extractedText,
-    pdfScreenshot,
-    pdfImages,
     questionAnswers,
     questions,
     setResumeFile,
     setFavoriteLanguage,
     setExtractedText,
-    setPdfScreenshot,
-    setPdfImages,
     setQuestionAnswers,
     setQuestions,
     setCurrentStep,
@@ -408,18 +404,10 @@ export default function Home() {
         if (data.full_text) {
           setExtractedText(data.full_text)
         }
-        if (data.screenshot) {
-          setPdfScreenshot(data.screenshot)
-        }
-        if (data.images && Array.isArray(data.images)) {
-          setPdfImages(data.images)
-        }
       }
     } catch (error) {
       console.error('Error processing PDF:', error)
       setExtractedText(null)
-      setPdfScreenshot(null)
-      setPdfImages([])
     } finally {
       setIsProcessing(false)
     }
@@ -448,8 +436,6 @@ export default function Home() {
   const handleSkip = () => {
     setResumeFile(null)
     setExtractedText(null)
-    setPdfScreenshot(null)
-    setPdfImages([])
     setCurrentStep(extractedText ? 3 : 2)
   }
 
@@ -547,8 +533,6 @@ export default function Home() {
                       onClick={() => {
                         setResumeFile(null)
                         setExtractedText(null)
-                        setPdfScreenshot(null)
-                        setPdfImages([])
                         fileInputRef.current?.click()
                       }}
                       disabled={isProcessing}
@@ -569,7 +553,7 @@ export default function Home() {
                         </Button>
 
                         <p className="text-sm text-muted-foreground">
-                          Note: Your data is not stored. <a href="https://github.com/dotcomnerd/amicracked/blob/main/app/api/ocr/route.ts" className="text-primary underline">Don't believe us? Check the code.</a>
+                          Note: Your data is <a href="https://github.com/dotcomnerd/amicracked/blob/main/app/api/questions/route.ts#L17" className="text-primary underline">not stored</a>. I do not care about your data.
                         </p>
                   </div>
                 )}

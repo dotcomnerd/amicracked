@@ -1,13 +1,5 @@
 import { create } from 'zustand'
 
-interface PDFImage {
-  page: number
-  index: number
-  base64: string
-  width: number
-  height: number
-}
-
 interface QuestionAnswer {
   questionIndex: number
   selectedAnswer: string
@@ -33,16 +25,12 @@ interface OnboardingState {
   resumeFile: File | null
   favoriteLanguage: string | null
   extractedText: string | null
-  pdfScreenshot: string | null
-  pdfImages: PDFImage[]
   questionAnswers: Record<number, string>
   questions: Question[]
   setCurrentStep: (step: number) => void
   setResumeFile: (file: File | null) => void
   setFavoriteLanguage: (language: string) => void
   setExtractedText: (text: string | null) => void
-  setPdfScreenshot: (screenshot: string | null) => void
-  setPdfImages: (images: PDFImage[]) => void
   setQuestionAnswers: (answers: Record<number, string>) => void
   setQuestions: (questions: Question[]) => void
   nextStep: () => void
@@ -54,16 +42,12 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   resumeFile: null,
   favoriteLanguage: null,
   extractedText: null,
-  pdfScreenshot: null,
-  pdfImages: [],
   questionAnswers: {},
   questions: [],
   setCurrentStep: (step) => set({ currentStep: step }),
   setResumeFile: (file) => set({ resumeFile: file }),
   setFavoriteLanguage: (language) => set({ favoriteLanguage: language }),
   setExtractedText: (text) => set({ extractedText: text }),
-  setPdfScreenshot: (screenshot) => set({ pdfScreenshot: screenshot }),
-  setPdfImages: (images) => set({ pdfImages: images }),
   setQuestionAnswers: (answers) => set({ questionAnswers: answers }),
   setQuestions: (questions) => set({ questions }),
   nextStep: () => set((state) => ({ currentStep: Math.min(state.currentStep + 1, 5) })),

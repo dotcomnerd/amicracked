@@ -32,8 +32,6 @@ export async function POST(request: NextRequest) {
       success: true,
         total_pages: result.pages,
         full_text: result.text,
-        screenshot: null,
-        images: [],
     })
   } catch (error) {
     console.error('Error processing PDF:', error)

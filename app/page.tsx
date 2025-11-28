@@ -75,15 +75,16 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                 <Button
                   asChild
+                  variant="outline"
                   size="default"
-                  className="text-sm px-3 py-2 h-auto group"
+                  className="text-sm px-3 py-2 h-auto"
                 >
-                  <Link href="/index">
+                  <Link href="/index" prefetch={true}>
                     Start Quiz
                     <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
-                <Button
+                {/* <Button
                   asChild
                   variant="outline"
                   size="default"
@@ -93,7 +94,7 @@ export default function LandingPage() {
                     <Code2 className="h-4 w-4" />
                     View Source
                   </Link>
-                </Button>
+                </Button> */}
               </div>
 
               <div className="pt-2">
