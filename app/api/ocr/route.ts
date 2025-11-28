@@ -1,23 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractImages, extractText, getDocumentProxy, renderPageAsImage } from 'unpdf'
+
+type Pdf2JsonModule = typeof import('pdf2json')
+
+const decodeText = (value: string | undefined): string => {
+    if (!value) return ''
+    try {
+        return decodeURIComponent(value)
+    } catch {
+        return value
+    }
+}
+
+const extractTextWithPdf2Json = async (buffer: Buffer) => {
+    const pdf2jsonModule: Pdf2JsonModule = await import('pdf2json')
+    const PDFParser = (pdf2jsonModule as unknown as { default?: unknown }).default ?? pdf2jsonModule
+
+    return new Promise<{ text: string; pages: number }>((resolve, reject) => {
+        const parser = new (PDFParser as new () => {
+            on: (event: string, cb: (data: unknown) => void) => void
+            parseBuffer: (buffer: Buffer) => void
+        })()
+
+        parser.on('pdfParser_dataError', (error: unknown) => {
+            reject((error as { parserError?: Error })?.parserError || error)
+        })
+
+        parser.on('pdfParser_dataReady', (pdfData: unknown) => {
+            const data = pdfData as { Pages?: Array<{ Texts?: Array<{ R?: Array<{ T?: string }> }> }> }
+            const pages = data?.Pages ?? []
+
+            const text = pages
+                .map((page) => {
+                    const pageTexts = page?.Texts ?? []
+                    return pageTexts
+                        .map((textItem) => {
+                            const chunks = textItem?.R ?? []
+                            return chunks.map((chunk) => decodeText(chunk?.T)).join('')
+                        })
+                        .join(' ')
+                        .trim()
+                })
+                .filter(Boolean)
+                .join('\n\n')
+
+            resolve({
+                text,
+                pages: pages.length,
+            })
+        })
+
+        parser.parseBuffer(buffer)
+    })
+}
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
-    console.log('File:', file)
-
-    if (!file) {
-      console.log('No file uploaded')
+      if (!file) {
       return NextResponse.json(
         { error: 'No file uploaded' },
         { status: 400 }
       )
     }
 
-    if (!file.type.includes('pdf')) {
-      console.log('File is not a PDF')
+      if (!file.type.includes('pdf')) {
       return NextResponse.json(
         { error: 'File must be a PDF' },
         { status: 400 }
@@ -25,94 +73,18 @@ export async function POST(request: NextRequest) {
     }
 
     const arrayBuffer = await file.arrayBuffer()
-    const pdfData = new Uint8Array(arrayBuffer)
+      const buffer = Buffer.from(arrayBuffer)
 
-    const pdf = await getDocumentProxy(pdfData)
+      const result = await extractTextWithPdf2Json(buffer)
 
-    const [textResult, firstPageImage] = await Promise.all([
-      extractText(pdf, { mergePages: true }),
-      renderPageAsImage(pdf, 1, {
-        canvasImport: () => import('@napi-rs/canvas'),
-        scale: 1.5,
-        toDataURL: true,
-      }).catch(() => null),
-    ])
-
-    const allImages: Array<{ page: number; index: number; base64: string; width: number; height: number }> = []
-
-    for (let pageNum = 1; pageNum <= textResult.totalPages; pageNum++) {
-      try {
-        const pageImages = await extractImages(pdf, pageNum)
-
-        const { createCanvas } = await import('@napi-rs/canvas')
-
-        for (let imgIndex = 0; imgIndex < pageImages.length; imgIndex++) {
-          const img = pageImages[imgIndex]
-          const canvas = createCanvas(img.width, img.height)
-          const ctx = canvas.getContext('2d')
-          const imageData = ctx.createImageData(img.width, img.height)
-          const pixels = img.width * img.height
-
-          if (img.channels === 4) {
-            imageData.data.set(img.data)
-          } else if (img.channels === 3) {
-            for (let i = 0; i < pixels; i++) {
-              const srcIdx = i * 3
-              const dstIdx = i * 4
-              imageData.data[dstIdx] = img.data[srcIdx]
-              imageData.data[dstIdx + 1] = img.data[srcIdx + 1]
-              imageData.data[dstIdx + 2] = img.data[srcIdx + 2]
-              imageData.data[dstIdx + 3] = 255
-            }
-          } else if (img.channels === 1) {
-            for (let i = 0; i < pixels; i++) {
-              const srcIdx = i
-              const dstIdx = i * 4
-              const gray = img.data[srcIdx]
-              imageData.data[dstIdx] = gray
-              imageData.data[dstIdx + 1] = gray
-              imageData.data[dstIdx + 2] = gray
-              imageData.data[dstIdx + 3] = 255
-            }
-          }
-
-          ctx.putImageData(imageData, 0, 0)
-          const base64 = canvas.toDataURL('image/png').split(',')[1]
-
-          allImages.push({
-            page: pageNum,
-            index: imgIndex + 1,
-            base64,
-            width: img.width,
-            height: img.height,
-          })
-        }
-      } catch (error) {
-        console.error(`Error extracting images from page ${pageNum}:`, error)
-      }
-    }
-
-    const screenshotBase64 = firstPageImage
-      ? typeof firstPageImage === 'string'
-        ? firstPageImage.split(',')[1]
-        : Buffer.from(firstPageImage).toString('base64')
-      : allImages.find(img => img.page === 1)?.base64 || null
-
-    console.log('Extracted PDF text:', `${textResult.text.substring(0, 200)}...`)
-    console.log('Extracted images:', allImages.length)
+      console.log('Extracted PDF text:', `${result.text.substring(0, 200)}...`)
 
     return NextResponse.json({
       success: true,
-      total_pages: textResult.totalPages,
-      full_text: textResult.text,
-      screenshot: screenshotBase64,
-      images: allImages.map(img => ({
-        page: img.page,
-        index: img.index,
-        base64: img.base64,
-        width: img.width,
-        height: img.height,
-      })),
+        total_pages: result.pages,
+        full_text: result.text,
+        screenshot: null,
+        images: [],
     })
   } catch (error) {
     console.error('Error processing PDF:', error)

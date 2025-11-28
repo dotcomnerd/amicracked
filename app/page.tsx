@@ -1,6 +1,7 @@
 'use client'
 
 import { ModeToggle } from '@/components/mode-toggle'
+import { Questions } from '@/components/questions'
 import { ResumePreview } from '@/components/resume-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,7 @@ import { useTheme } from 'next-themes'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import Confetti from 'react-confetti'
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 
 const PROGRAMMING_LANGUAGES = [
   'JavaScript',
@@ -228,11 +229,14 @@ export default function Home() {
     extractedText,
     pdfScreenshot,
     pdfImages,
+    questionAnswers,
     setResumeFile,
     setFavoriteLanguage,
     setExtractedText,
     setPdfScreenshot,
     setPdfImages,
+    setQuestionAnswers,
+    setCurrentStep,
     nextStep,
     previousStep
   } = useOnboardingStore()
@@ -263,14 +267,14 @@ export default function Home() {
   }, [])
 
   React.useEffect(() => {
-    if (currentStep === 3) {
+    if (currentStep === 4) {
       setIsCodeValid(false)
       setShowConfetti(false)
     }
   }, [currentStep])
 
   React.useEffect(() => {
-    if (isCodeValid && currentStep === 3 && badgeRef.current) {
+    if (isCodeValid && currentStep === 4 && badgeRef.current) {
       const rect = badgeRef.current.getBoundingClientRect()
       const source = {
         x: rect.left,
@@ -364,7 +368,23 @@ export default function Home() {
     setExtractedText(null)
     setPdfScreenshot(null)
     setPdfImages([])
-    nextStep()
+    setCurrentStep(extractedText ? 3 : 2)
+  }
+
+  const handleNextStep = () => {
+    if (currentStep === 2 && !extractedText) {
+      setCurrentStep(3)
+    } else {
+      nextStep()
+    }
+  }
+
+  const handlePreviousStep = () => {
+    if (currentStep === 3 && extractedText) {
+      setCurrentStep(2)
+    } else {
+      previousStep()
+    }
   }
 
   const progress = (currentStep / TOTAL_STEPS) * 100
@@ -475,9 +495,25 @@ export default function Home() {
             </div>
           )}
 
-          {currentStep === 2 && (
+            {currentStep === 2 && extractedText && (
             <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Resume Questions</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Answer these questions based on your resume to test your knowledge
+                  </p>
+                </div>
+                <Questions
+                  resumeText={extractedText}
+                  onComplete={(answers) => {
+                    setQuestionAnswers(answers)
+                  }}
+                />
+              </div>
+            )}
 
+            {currentStep === 2 && !extractedText && (
+              <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <div className="col-span-full">
                     <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
@@ -497,10 +533,30 @@ export default function Home() {
           )}
 
           {currentStep === 3 && (
-              <CodeEditor onCodeValidChange={setIsCodeValid} isValid={isCodeValid} onBadgeRef={handleBadgeRef} />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="col-span-full">
+                    <h3 className="text-lg font-semibold">What's your favorite programming language?</h3>
+                  </div>
+                  {PROGRAMMING_LANGUAGES.map((language) => (
+                    <Button
+                      key={language}
+                      variant={favoriteLanguage === language ? 'default' : 'outline'}
+                      onClick={() => setFavoriteLanguage(language)}
+                      className="h-auto py-3"
+                    >
+                      {language}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {currentStep === 4 && (
+              <CodeEditor onCodeValidChange={setIsCodeValid} isValid={isCodeValid} onBadgeRef={handleBadgeRef} />
+            )}
+
+            {currentStep === 5 && (
             <div className="space-y-6 text-center py-8">
               <div className="space-y-2">
                 <h3 className="text-2xl font-semibold">You Are</h3>
@@ -572,7 +628,7 @@ export default function Home() {
         <CardFooter className="flex justify-between">
           <Button
             variant="ghost"
-            onClick={previousStep}
+              onClick={handlePreviousStep}
             disabled={currentStep === 1}
           >
             Back
@@ -589,8 +645,13 @@ export default function Home() {
                 </Button>
               )}
               <Button
-                onClick={nextStep}
-                  disabled={(currentStep === 2 && !favoriteLanguage) || (currentStep === 3 && !isCodeValid)}
+                  onClick={handleNextStep}
+                  disabled={
+                    (currentStep === 2 && extractedText && Object.keys(questionAnswers).length !== 3) ||
+                    (currentStep === 2 && !extractedText && !favoriteLanguage) ||
+                    (currentStep === 3 && !favoriteLanguage) ||
+                    (currentStep === 4 && !isCodeValid)
+                  }
               >
                 Next
               </Button>
