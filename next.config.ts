@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     browserDebugInfoInTerminal: true,
   },
+  cacheComponents: true,
   async rewrites() {
     return [];
   },

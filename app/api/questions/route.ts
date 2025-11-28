@@ -1,23 +1,33 @@
-import { openai } from '@ai-sdk/openai'
 import { streamObject } from 'ai'
+import { generateResumeQuestions } from '@/lib/cache/questions'
 import { z } from 'zod'
 
-const questionSchema = z.object({
-  question: z.string().describe('The question text'),
-  options: z.object({
-    A: z.string().describe('Option A'),
-    B: z.string().describe('Option B'),
-    C: z.string().describe('Option C'),
-    D: z.string().describe('Option D'),
-  }),
-  correctAnswer: z.enum(['A', 'B', 'C', 'D']).describe('The correct answer'),
-})
-
 const questionsSchema = z.object({
-  questions: z.array(questionSchema).length(3),
+  questions: z.array(
+    z.object({
+      question: z.string(),
+      options: z.object({
+        A: z.string(),
+        B: z.string(),
+        C: z.string(),
+        D: z.string(),
+      }),
+      correctAnswer: z.enum(['A', 'B', 'C', 'D']),
+    })
+  ).length(3),
 })
 
 export const maxDuration = 30
+
+const createStreamFromCachedObject = (obj: z.infer<typeof questionsSchema>) => {
+  const encoder = new TextEncoder()
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(JSON.stringify(obj)))
+      controller.close()
+    },
+  })
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,23 +41,47 @@ export async function POST(req: Request) {
       )
     }
 
-    const result = streamObject({
-      model: openai('gpt-5-nano'),
-      schema: questionsSchema,
-      prompt: `Based on the following resume, generate exactly 3 multiple choice questions that test understanding of the candidate's experience, skills, and achievements. Make the questions insightful, relevant, and challenging but fair. Each question should have 4 options (A, B, C, D) and one correct answer.
+    try {
+      const cachedQuestions = await generateResumeQuestions(resumeText)
 
-Resume:
+      const stream = createStreamFromCachedObject(cachedQuestions)
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      })
+    } catch (error) {
+      console.log('Error with cache, falling back to stream generation:', error)
+
+      const { openai } = await import('@ai-sdk/openai')
+      const result = streamObject({
+        model: openai('gpt-5-nano'),
+        schema: questionsSchema,
+        prompt: `You are creating a quiz to test someone's knowledge of their own resume. Based on the following resume text, generate exactly 3 multiple choice questions.
+
+Resume Text:
 ${resumeText}
 
-Generate 3 questions that:
-1. Test knowledge of specific technologies or tools mentioned
-2. Assess understanding of their work experience and projects
-3. Evaluate comprehension of their achievements or responsibilities
+Requirements:
+1. Each question must test knowledge of specific, factual information from the resume (technologies, companies, dates, achievements, etc.)
+2. Questions should be clear and unambiguous
+3. Each question must have exactly 4 options (A, B, C, D)
+4. Only ONE option should be correct based on information explicitly stated in the resume
+5. The incorrect options (distractors) should be plausible but clearly wrong
+6. Questions should cover different aspects: technical skills, work experience, education, or achievements
+7. Make questions challenging but fair - they should test if the person actually knows their resume
 
-Make sure each question is clear, has plausible distractors, and the correct answer is based on information actually present in the resume.`,
-    })
+Generate 3 questions that are:
+- Specific to the resume content
+- Test factual knowledge (not opinions)
+- Have one clearly correct answer
+- Have plausible but incorrect distractors
 
-    return result.toTextStreamResponse()
+Return exactly 3 questions in the required format.`,
+      })
+
+      return result.toTextStreamResponse()
+    }
   } catch (error) {
     console.error('Error generating questions:', error)
     return Response.json(
