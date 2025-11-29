@@ -21,10 +21,11 @@ import {
   calculateFormulaBasedScore,
 } from '@/lib/scoring'
 import type { Question } from '@/lib/store'
-import { useOnboardingStore } from '@/lib/store'
+import { useAudioStore, useOnboardingStore } from '@/lib/store'
+import { cn } from '@/lib/utils'
 import { useSandpack } from '@codesandbox/sandpack-react'
 import confetti from 'canvas-confetti'
-import { CheckCircle2, Code2, Loader2, Sparkles, Timer, XCircle } from 'lucide-react'
+import { CheckCircle2, Code2, Loader2, Pause, Play, Repeat, Sparkles, Timer, Volume2, VolumeX, XCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -344,6 +345,19 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const badgeRef = useRef<HTMLSpanElement | null>(null)
+  const { isPlaying, isMuted, isLoopEnabled, toggle, toggleMute, toggleLoop } = useAudioStore()
+
+  const handleToggleMute = () => {
+    toggleMute()
+  }
+
+  const handleTogglePause = async () => {
+    await toggle()
+  }
+
+  const handleToggleLoop = () => {
+    toggleLoop()
+  }
   const [dragActive, setDragActive] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isCodeValid, setIsCodeValid] = useState(false)
@@ -585,7 +599,41 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <Link href="/" className="font-semibold tracking-widest text-primary/50 hover:text-primary cursor-pointer"><ColourfulText text="amicracked.com" /></Link>
         </div>
-        <ModeToggle />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleLoop}
+            onKeyDown={(e) => e.key === 'Enter' && handleToggleLoop()}
+            tabIndex={0}
+            aria-label={isLoopEnabled ? 'Disable audio loop' : 'Enable audio loop'}
+            className={cn(
+              'relative flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+              isLoopEnabled
+                ? 'bg-primary/20 hover:bg-primary/30 text-primary'
+                : 'bg-secondary/80 hover:bg-secondary'
+            )}
+          >
+            <Repeat className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleTogglePause}
+            onKeyDown={(e) => e.key === 'Enter' && handleTogglePause()}
+            tabIndex={0}
+            aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-secondary/80 hover:bg-secondary transition-colors"
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={handleToggleMute}
+            onKeyDown={(e) => e.key === 'Enter' && handleToggleMute()}
+            tabIndex={0}
+            aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-secondary/80 hover:bg-secondary transition-colors"
+          >
+            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+          <ModeToggle />
+        </div>
       </header>
 
       <main className="relative z-50 flex min-h-screen items-center justify-center p-4 pt-20">

@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ColourfulText } from '@/components/ui/colorful-text'
 import { Separator } from '@/components/ui/separator'
-import Grid, { type ItemConfig } from '@/lib/grid'
 import { allBrands } from '@/lib/brands'
+import Grid, { type ItemConfig } from '@/lib/grid'
+import { useAudioStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { ArrowRight, Code2 } from 'lucide-react'
+import { ArrowRight, Pause, Play, Repeat, Volume2, VolumeX } from 'lucide-react'
 import Link from 'next/link'
 
 const GridCell = ({ gridIndex }: ItemConfig) => {
@@ -41,9 +42,59 @@ const GridCell = ({ gridIndex }: ItemConfig) => {
 }
 
 export default function LandingPage() {
+  const { isPlaying, isMuted, isLoopEnabled, play, toggle, toggleMute, toggleLoop } = useAudioStore()
+
+  const handleStartQuiz = async () => {
+    await play()
+  }
+
+  const handleToggleMute = () => {
+    toggleMute()
+  }
+
+  const handleTogglePause = async () => {
+    await toggle()
+  }
+
+  const handleToggleLoop = () => {
+    toggleLoop()
+  }
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <button
+          onClick={handleToggleLoop}
+          onKeyDown={(e) => e.key === 'Enter' && handleToggleLoop()}
+          tabIndex={0}
+          aria-label={isLoopEnabled ? 'Disable audio loop' : 'Enable audio loop'}
+          className={cn(
+            'relative flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+            isLoopEnabled
+              ? 'bg-primary/20 hover:bg-primary/30 text-primary'
+              : 'bg-secondary/80 hover:bg-secondary'
+          )}
+        >
+          <Repeat className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleTogglePause}
+          onKeyDown={(e) => e.key === 'Enter' && handleTogglePause()}
+          tabIndex={0}
+          aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-secondary/80 hover:bg-secondary transition-colors"
+        >
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
+        <button
+          onClick={handleToggleMute}
+          onKeyDown={(e) => e.key === 'Enter' && handleToggleMute()}
+          tabIndex={0}
+          aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-secondary/80 hover:bg-secondary transition-colors"
+        >
+          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
         <ModeToggle />
       </div>
       <div className="absolute inset-0 z-0">
@@ -73,7 +124,7 @@ export default function LandingPage() {
                   size="default"
                   className="text-sm px-3 py-2 h-auto"
                 >
-                  <Link href="/st" prefetch={true}>
+                  <Link href="/st" prefetch={true} onClick={handleStartQuiz}>
                     Start Quiz
                     <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
