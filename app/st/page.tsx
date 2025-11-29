@@ -301,22 +301,15 @@ const getCrackedStatus = (score: number): string => {
   if (score >= 95) return 'True Wizard'
   if (score >= 92) return 'Mythic Engineer'
   if (score >= 89) return 'Cracked Beyond Repair'
-  if (score >= 86) return 'Savant Tier Engineer'
-  if (score >= 83) return 'Super Cracked'
-  if (score >= 80) return 'Extremely Cracked'
-  if (score >= 77) return 'Notoriously Cracked'
   if (score >= 74) return 'Interviewer\'s Nightmare'
   if (score >= 71) return 'Blazing Senior'
-  if (score >= 68) return 'Commit Genius'
-  if (score >= 65) return 'Syntax Maestro'
   if (score >= 62) return 'Framework Whisperer'
-  if (score >= 59) return 'Very Cracked'
-  if (score >= 50) return 'Veteran'
+  if (score >= 50) return 'Veteran Engineer'
   if (score >= 44) return 'Functionally Sound'
   if (score >= 35) return 'Methodical Debugger'
   if (score >= 32) return '“Just Ship-It” Beginner'
   if (score >= 29) return 'Not Quite Cracked'
-  if (score >= 15) return 'An earnest amateur'
+  if (score >= 15) return 'An Earnest Amateur'
   if (score >= 2) return 'Just Here For The Memes'
   if (score >= 1) return 'Pressed a Button'
   if (score > 0) return 'Barely Tried'
@@ -717,7 +710,7 @@ export default function Home() {
                         </Button>
 
                         <p className="text-sm text-muted-foreground">
-                          Note: Your data is <a href="https://github.com/dotcomnerd/amicracked/blob/main/app/api/questions/route.ts#L17" className="text-primary underline">not stored</a>. I do not care about your data.
+                          Note: Your data is <span className="text-primary underline">not persisted on my servers</span>.
                         </p>
                         </div>
                       )}
