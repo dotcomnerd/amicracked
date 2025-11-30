@@ -923,7 +923,7 @@ export default function Home() {
                               <ChainOfThoughtStep
                                 icon={<Loader2 className="size-4" />}
                                 label="Analyzing your performance..."
-                                description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
+                                description="Evaluating all things you've done so far, making sure you're not a crackpot"
                                 status="active"
                                 animateIcon
                               />
