@@ -144,7 +144,7 @@ export default function LandingPage() {
 
               <div className="pt-2">
                 <div className="text-center">
-                  <span>Made by @<a className="text-primary font-bold underline hover:text-primary/80" href="https://github.com/nyumat" target="_blank" rel="noopener noreferrer"><ColourfulText text="nyumat" underlined /></a></span>
+                  <span className='text-xs opacity-55 hover:opacity-100 transition-opacity'>Made by @<a className="text-primary font-bold underline hover:text-primary/80" href="https://github.com/nyumat" target="_blank" rel="noopener noreferrer"><ColourfulText text="nyumat" underlined /></a></span>
                 </div>
               </div>
             </div>
