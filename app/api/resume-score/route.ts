@@ -11,7 +11,7 @@ const resumeScoreSchema = z.object({
     school: z.number().min(0).max(8).optional().describe('School prestige score 0-8'),
     internships: z.number().min(0).max(8).optional().describe('Internship quality score 0-8'),
     companies: z.number().min(0).max(8).optional().describe('Company prestige score 0-8'),
-    projects: z.number().min(0).max(6).optional().describe('Project quality score 0-6'),
+    projects: z.number().min(0).max(8).optional().describe('Project quality score 0-8'),
   }).optional(),
 })
 
@@ -58,7 +58,8 @@ Score based on these categories (total 0-30 points):
 - 1: Small companies, unknown startups
 - 0: No company information
 
-**Projects (0-6 points)**:
+**Projects (0-8 points)**:
+- 7-8: Extremely impressive scale/impact (millions of users, highly popular open source with thousands of stars, novel technical achievements, major contributions)
 - 5-6: Impressive scale/impact (millions of users, open source with stars, novel technical achievements)
 - 3-4: Good technical projects with clear complexity (real apps, interesting systems)
 - 1-2: Basic projects (todo apps, portfolio sites, coursework)
@@ -75,7 +76,7 @@ Be critical and realistic. A score of 25-30 is extremely rare (think: Stanford C
 Return a score, reasoning, and optional breakdown by category.`
 
     const result = await generateObject({
-      model: openai('gpt-5-nano'),
+      model: openai('gpt-4.1-mini'),
       schema: resumeScoreSchema,
       prompt,
     })

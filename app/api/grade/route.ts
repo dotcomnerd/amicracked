@@ -101,7 +101,7 @@ Also suggest a small adjustment (-5 to +5 points) if there's something notable:
 Most users should get 0 adjustment. Only suggest non-zero for notable cases.`
 
       const result = await generateObject({
-        model: openai('gpt-4o-mini'),
+        model: openai('gpt-4.1-mini'),
         schema: reasoningSchema,
         prompt,
       })

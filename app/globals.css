@@ -119,4 +119,46 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.5 0 0 / 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.5 0 0 / 0.5);
+    background-clip: padding-box;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: oklch(0.7 0 0 / 0.3);
+    background-clip: padding-box;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0 0 / 0.5);
+    background-clip: padding-box;
+  }
+
+  /* Custom scrollbar for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.5 0 0 / 0.3) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.7 0 0 / 0.3) transparent;
+  }
 }

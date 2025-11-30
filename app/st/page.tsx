@@ -584,15 +584,15 @@ export default function Home() {
   const status = getCrackedStatus(finalScore)
 
   return (
-    <div className="relative w-screen min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="absolute inset-0 z-0">
+    <div className="relative w-full min-h-screen overflow-x-hidden">
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-background via-background to-muted/20">
         <Grid gridSize={120} renderItem={GridCell} />
       </div>
-      <header className="fixed top-0 left-0 right-0 z-[99999] flex items-center justify-between px-6 py-4 backdrop-blur-sm bg-background/80 border-b border-border/20">
-        <div className="flex items-center gap-2">
+      <header className="fixed top-0 left-0 right-0 z-[99999] flex items-center justify-between px-4 py-4 pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <Link href="/" className="font-semibold tracking-widest text-primary/50 hover:text-primary cursor-pointer"><ColourfulText text="amicracked.com" /></Link>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={handleToggleLoop}
             onKeyDown={(e) => e.key === 'Enter' && handleToggleLoop()}
@@ -629,7 +629,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="relative z-50 flex min-h-screen items-center justify-center p-4 pt-20">
+      <main className="relative z-10 flex min-h-screen items-center justify-center p-4 pt-20">
         <Card variant="glass" className="w-full max-w-2xl">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">

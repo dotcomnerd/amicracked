@@ -42,7 +42,9 @@ const questionSchema = z.object({
   code: codeSchema,
 })
 
-const questionsSchema = z.array(questionSchema)
+const questionsResponseSchema = z.object({
+  questions: z.array(questionSchema),
+})
 
 type Question = z.infer<typeof questionSchema>
 
@@ -60,8 +62,8 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
 
   const { object, submit, isLoading, error } = useObject({
     api: '/api/questions',
-    schema: questionsSchema,
-    initialValue: [],
+    schema: questionsResponseSchema,
+    initialValue: { questions: [] },
   })
 
   useEffect(() => {
@@ -73,10 +75,9 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
   }, [resumeText, isLoading, submit])
 
   useEffect(() => {
-    if (object && Array.isArray(object) && object.length === 3 && onQuestionsLoaded && !hasLoadedQuestionsRef.current) {
-      const validQuestions = (object as unknown[]).filter((q): q is Question => {
-        return q !== undefined && q !== null && typeof q === 'object' && 'question' in q && 'correctAnswer' in q
-      })
+    const streamedQuestions = object?.questions
+    if (streamedQuestions && streamedQuestions.length === 3 && onQuestionsLoaded && !hasLoadedQuestionsRef.current) {
+      const validQuestions = streamedQuestions.filter((q: any) => q !== undefined && q !== null) as unknown as Question[]
       if (validQuestions.length === 3) {
         hasLoadedQuestionsRef.current = true
         onQuestionsLoaded(validQuestions)
@@ -96,7 +97,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
     }
   }
 
-  const questions = object || []
+  const questions = object?.questions || []
   const allQuestionsLoaded = questions.length === 3
   const allAnswered = Object.keys(selectedAnswers).length === 3
 
@@ -191,7 +192,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
             {codeData?.language && codeData?.src && (
               <div className="p-4 pb-0 overflow-hidden">
                 <CodeBlock
-                  className="mb-0 max-w-full"
+                  className="mb-0 max-w-full overflow-x-auto"
                   data={[{
                     language: codeData.language,
                     filename: `snippet.${codeData.language}`,
@@ -284,7 +285,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
                         <span className="font-semibold shrink-0 mt-0.5">
                           {option}.
                         </span>
-                        <div className="flex-1 min-w-0 text-left [&_p]:text-sm [&_p]:m-0 [&_p:last-child]:mb-0 [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:text-xs [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded-md">
+                        <div className="flex-1 min-w-0 text-left overflow-hidden [&_p]:text-sm [&_p]:m-0 [&_p:last-child]:mb-0 [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:text-xs [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded-md [&_pre]:max-w-full">
                           <Streamdown isAnimating={isLoading}>
                             {optionText}
                           </Streamdown>
