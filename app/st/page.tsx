@@ -160,8 +160,7 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, on
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Code2 className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold">Debugging</h3>
+            <h3 className="text-lg font-semibold">Yeah you gotta fix this...</h3>
           </div>
           {isValid ? (
             <Badge
@@ -170,7 +169,7 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, on
               className="bg-green-500 hover:bg-green-600 text-white border-green-600"
             >
               <CheckCircle2 className="h-3 w-3" />
-              Nice work! Continue on to the next question.
+              AC
             </Badge>
           ) : (
             <Badge
@@ -178,12 +177,12 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, on
               variant="destructive"
             >
               <XCircle className="h-3 w-3" />
-              Keep trying!
+              NA
             </Badge>
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Fix the bug in the code to continue ;)
+          Fix the bug(s) in the code to continue!
         </p>
       </div>
       <div className="rounded-xl overflow-hidden border-2 border-border/50 bg-card shadow-sm" style={{ height: '420px' }}>
