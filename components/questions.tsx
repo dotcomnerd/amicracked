@@ -20,10 +20,57 @@ import {
   CodeBlockItem,
 } from '@/components/ui/codeblock'
 import { experimental_useObject as useObject } from '@ai-sdk/react'
-import { CheckCircle2, Code, FileText, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { Streamdown } from 'streamdown'
 import { z } from 'zod'
+
+const rainbowColors = [
+  '#ff437a',
+  'orange',
+  'yellow',
+  '#e2ff73',
+  '#8fd4ff',
+  '#b360ff',
+  'violet',
+]
+
+const RainbowSpinner = () => {
+  return (
+    <div className="relative size-4">
+      <div
+        className="absolute inset-0 rounded-full animate-spin"
+        style={{
+          background: `conic-gradient(from 0deg, ${rainbowColors.join(', ')}, ${rainbowColors[0]})`,
+          mask: 'radial-gradient(circle, transparent 30%, black 30%)',
+          WebkitMask: 'radial-gradient(circle, transparent 30%, black 30%)',
+        }}
+      />
+    </div>
+  )
+}
+
+const RainbowText = ({ text }: { text: string }) => {
+  return text.split("").map((char, index) => (
+    <motion.span
+      key={`${char}-${index}`}
+      initial={{ y: 0 }}
+      animate={{
+        color: rainbowColors[index % rainbowColors.length],
+        y: [0, -3, 0],
+        scale: [1, 1.01, 1],
+      }}
+      transition={{
+        duration: 0.5,
+        delay: index * 0.05,
+      }}
+      className="inline-block whitespace-pre font-sans tracking-tight"
+    >
+      {char}
+    </motion.span>
+  ))
+}
 
 const codeSchema = z.object({
   language: z.string(),
@@ -100,18 +147,38 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
   const questions = object?.questions || []
   const allQuestionsLoaded = questions.length === 3
   const allAnswered = Object.keys(selectedAnswers).length === 3
+  const [showCompleteMessage, setShowCompleteMessage] = useState(false)
 
-  const getStepStatus = (stepIndex: number): 'complete' | 'active' | 'pending' => {
-    if (stepIndex === 0) {
-      if (questions.length > 0) return 'complete'
-      if (isLoading) return 'active'
-      return 'pending'
+  useEffect(() => {
+    if (allQuestionsLoaded) {
+      setShowCompleteMessage(true)
+      const timer = setTimeout(() => {
+        setShowCompleteMessage(false)
+      }, 1500)
+      return () => clearTimeout(timer)
+    } else {
+      setShowCompleteMessage(false)
     }
-    const questionIndex = stepIndex - 1
-    if (questions[questionIndex]) return 'complete'
-    if (isLoading && questions.length === questionIndex) return 'active'
-    return 'pending'
+  }, [allQuestionsLoaded])
+
+  const getCurrentStep = () => {
+    if (showCompleteMessage) {
+      return { type: 'complete' as const, questionNumber: null }
+    }
+    if (allQuestionsLoaded) {
+      return null
+    }
+    if (questions.length === 0 && isLoading) {
+      return { type: 'analyzing' as const, questionNumber: null }
+    }
+    if (questions.length < 3 && isLoading) {
+      return { type: 'generating' as const, questionNumber: questions.length + 1 }
+    }
+    return null
   }
+
+  const currentStep = getCurrentStep()
+  const showChainOfThought = (isLoading && questions.length < 3) || showCompleteMessage
 
   if (error) {
     return (
@@ -128,54 +195,131 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
 
   return (
     <div className="space-y-6">
-      {(isLoading || questions.length < 3) && (
-        <Card variant="glass">
-          <CardContent>
-            <ChainOfThought defaultOpen>
-              <ChainOfThoughtHeader>
-                Generating personalized questions
-              </ChainOfThoughtHeader>
-              <ChainOfThoughtContent>
-                <ChainOfThoughtStep
-                  icon={getStepStatus(0) === 'active' ? Loader2 : FileText}
-                  label="Analyzing resume content"
-                  description="Extracting technologies, skills, and experience"
-                  status={getStepStatus(0)}
-                  animateIcon={getStepStatus(0) === 'active'}
-                />
-                <ChainOfThoughtStep
-                  icon={getStepStatus(1) === 'active' ? Loader2 : Code}
-                  label="Generating question 1"
-                  description="Creating first technical question based on your experience"
-                  status={getStepStatus(1)}
-                  animateIcon={getStepStatus(1) === 'active'}
-                />
-                <ChainOfThoughtStep
-                  icon={getStepStatus(2) === 'active' ? Loader2 : Code}
-                  label="Generating question 2"
-                  description="Creating second technical question based on your experience"
-                  status={getStepStatus(2)}
-                  animateIcon={getStepStatus(2) === 'active'}
-                />
-                <ChainOfThoughtStep
-                  icon={getStepStatus(3) === 'active' ? Loader2 : Code}
-                  label="Generating question 3"
-                  description="Creating third technical question based on your experience"
-                  status={getStepStatus(3)}
-                  animateIcon={getStepStatus(3) === 'active'}
-                />
-              </ChainOfThoughtContent>
-            </ChainOfThought>
-          </CardContent>
-        </Card>
-      )}
+      <AnimatePresence>
+        {showChainOfThought && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <Card variant="glass">
+              <CardContent>
+                <ChainOfThought defaultOpen>
+                  <ChainOfThoughtHeader>
+                    <AnimatePresence mode="wait">
+                      {showCompleteMessage ? (
+                        <motion.span
+                          key="complete"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          Questions Generated
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="generating"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                            Streaming questions in...
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </ChainOfThoughtHeader>
+                  <ChainOfThoughtContent>
+                    <AnimatePresence mode="wait">
+                      {currentStep && currentStep.type === 'complete' && (
+                        <motion.div
+                          key="complete"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChainOfThoughtStep
+                            icon={<CheckCircle2 className="size-4" />}
+                            label={<RainbowText text="All questions ready!" />}
+                            description="Good luck out there, champ. You'll need it."
+                            status="complete"
+                            animateIcon={false}
+                            disableDefaultAnimation={true}
+                          />
+                        </motion.div>
+                      )}
+                      {currentStep && currentStep.type === 'analyzing' && (
+                        <motion.div
+                          key="analyzing"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChainOfThoughtStep
+                            icon={<RainbowSpinner />}
+                            label="On question 1..."
+                            description="Wow, this resume's nice!!"
+                            status="active"
+                            animateIcon={false}
+                            disableDefaultAnimation={true}
+                          />
+                        </motion.div>
+                      )}
+                      {currentStep && currentStep.type === 'generating' && (
+                        <motion.div
+                          key={`question-${currentStep.questionNumber}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChainOfThoughtStep
+                            icon={<RainbowSpinner />}
+                            label={
+                              <span>
+                                On question{' '}
+                                <motion.span
+                                  key={currentStep.questionNumber}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="inline-block"
+                                >
+                                  {currentStep.questionNumber}
+                                </motion.span>
+                              </span>
+                            }
+                            description={
+                              currentStep.questionNumber === 1
+                                ? "Wow, this resume's nice!!"
+                                : currentStep.questionNumber === 2
+                                ? "Figuring out what you hate and asking you about it (/jk)"
+                                : "Forging the final question..."
+                            }
+                            status="active"
+                            animateIcon={false}
+                            disableDefaultAnimation={true}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </ChainOfThoughtContent>
+                </ChainOfThought>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {questions.map((question: Question | undefined, index: number) => {
         if (!question) return null
 
         const partialQuestion = question as Partial<Question>
         const options = partialQuestion.options
-        const questionText = partialQuestion.question ?? 'Generating question...'
+        const questionText = partialQuestion.question ?? 'Loading question...'
         const correctAnswer = partialQuestion.correctAnswer
         const isSubmitted = submittedAnswers[index]
         const selectedAnswer = selectedAnswers[index]
@@ -307,7 +451,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
             className="animate-pulse border-dashed border-muted"
           >
             <CardHeader>
-              <CardTitle className="text-lg mb-2">Generating question {index + 1}...</CardTitle>
+              <CardTitle className="text-lg mb-2">Loading question {index + 1}...</CardTitle>
               <CardDescription className="h-4 bg-muted rounded w-3/4" />
             </CardHeader>
             <CardContent className="space-y-2">

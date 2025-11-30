@@ -1,6 +1,5 @@
 "use client";
 
-import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -8,11 +7,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import {
   BrainIcon,
   ChevronDownIcon,
-  DotIcon,
-  type LucideIcon,
+  DotIcon
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useMemo } from "react";
@@ -109,21 +108,23 @@ export const ChainOfThoughtHeader = memo(
 );
 
 export type ChainOfThoughtStepProps = ComponentProps<"div"> & {
-  icon?: LucideIcon;
+  icon?: ReactNode;
   label: ReactNode;
   description?: ReactNode;
   status?: "complete" | "active" | "pending";
   animateIcon?: boolean;
+  disableDefaultAnimation?: boolean;
 };
 
 export const ChainOfThoughtStep = memo(
   ({
     className,
-    icon: Icon = DotIcon,
+    icon,
     label,
     description,
     status = "complete",
     animateIcon = false,
+    disableDefaultAnimation = false,
     children,
     ...props
   }: ChainOfThoughtStepProps) => {
@@ -138,18 +139,20 @@ export const ChainOfThoughtStep = memo(
         className={cn(
           "flex gap-2 text-sm",
           statusStyles[status],
-          "fade-in-0 slide-in-from-top-2 animate-in",
+          !disableDefaultAnimation && "fade-in-0 slide-in-from-top-2 animate-in",
           className
         )}
         {...props}
       >
         <div className="relative mt-0.5">
-          <Icon
+          <div
             className={cn(
-              "size-4",
+              "size-4 flex items-center justify-center",
               status === "active" && animateIcon && "animate-spin"
             )}
-          />
+          >
+            {icon || <DotIcon className="size-4" />}
+          </div>
           <div className="-mx-px absolute top-7 bottom-0 left-1/2 w-px bg-border" />
         </div>
         <div className="flex-1 space-y-2">

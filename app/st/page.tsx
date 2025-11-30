@@ -699,7 +699,7 @@ export default function Home() {
                       ) : (
                         <div className="space-y-4">
                           <p className="text-sm text-muted-foreground">
-                            Optionally upload your resume to (maybe) boost your score ;)
+                              Upload your resume to (maybe) boost your score.
                           </p>
                           <Button
                             variant="outline"
@@ -710,7 +710,9 @@ export default function Home() {
                         </Button>
 
                         <p className="text-sm text-muted-foreground">
-                          Note: Your data is <span className="text-primary underline">not persisted on my servers</span>.
+                              Note: Your data is <span className="text-primary underline">not stored on my servers</span>.
+                              <br />
+                              <span className='text-[10px] text-muted-foreground'>OpenAI is the one who sees your data.</span>
                         </p>
                         </div>
                       )}
@@ -729,9 +731,9 @@ export default function Home() {
                 >
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <h3 className="text-lg font-semibold">Resume Questions</h3>
+                      <h3 className="text-lg font-semibold">Trivia Time</h3>
                       <p className="text-sm text-muted-foreground">
-                        Answer these questions based on your resume to test your knowledge
+                        Let's see what ya got.
                       </p>
                     </div>
                     <Questions
@@ -870,7 +872,7 @@ export default function Home() {
                             </ChainOfThoughtHeader>
                             <ChainOfThoughtContent>
                               <ChainOfThoughtStep
-                                icon={Loader2}
+                                icon={<Loader2 className="size-4" />}
                                 label="Analyzing your performance"
                                 description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
                                 status="active"
