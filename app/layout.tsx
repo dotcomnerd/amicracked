@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    "max-snippet": 120,
   },
   description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
   openGraph: {
