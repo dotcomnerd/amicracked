@@ -38,7 +38,7 @@ ${resumeText}
 strict grounding rules:
 Only use technologies and concepts that appear directly in their text. Never introduce new domains, tools, frameworks, libraries, or languages. No assumptions and no extrapolation. No guessing. No domain expansion. Each question must be grounded in a distinct technology or claim found in the uploaded text.
 
-Do not ask about black box things. Make it like a college-level computer science exam question.
+Do not ask about black box things. Make it like a college-level computer science exam question. Do not add comments that spoil the question or reveal the answer.
 
 DO NOT DO COOKIE CUTTER QUESTIONS. Make them actually substantive and relevant to the experience, technologies, tools, stacks, workflows, and claims explicitly present in the uploaded text.
 
