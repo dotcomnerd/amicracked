@@ -284,3 +284,16 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     currentIsLoopEnabled = newLoopState
   },
 }))
+
+// special audio player for 67% score achievement
+export const playSixSevenAudio = async (): Promise<void> => {
+  if (typeof window === 'undefined') return
+
+  try {
+    const audio = new Audio('/6-7.mp3')
+    audio.volume = 1
+    await audio.play()
+  } catch (error) {
+    console.error('Failed to play 6-7 audio:', error)
+  }
+}

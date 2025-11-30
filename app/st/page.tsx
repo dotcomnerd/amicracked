@@ -21,11 +21,11 @@ import {
   calculateFormulaBasedScore,
 } from '@/lib/scoring'
 import type { Question } from '@/lib/store'
-import { useAudioStore, useOnboardingStore } from '@/lib/store'
+import { playSixSevenAudio, useAudioStore, useOnboardingStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { useSandpack } from '@codesandbox/sandpack-react'
 import confetti from 'canvas-confetti'
-import { CheckCircle2, Code2, Loader2, Pause, Play, Repeat, Sparkles, Timer, Volume2, VolumeX, XCircle } from 'lucide-react'
+import { AppWindow, CheckCircle2, Code2, Loader2, Pause, Play, Repeat, Timer, Volume2, VolumeX, XCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -270,11 +270,11 @@ const CodeEditorContent = ({ onCodeValidChange, timerStartTime, onTimeUpdate, is
           <div className="flex items-center gap-2 flex-1">
             <SandboxTabsTrigger value="code">
               <Code2 className="h-3.5 w-3.5" />
-              Code
+              src
             </SandboxTabsTrigger>
             <SandboxTabsTrigger value="preview">
-              <Sparkles className="h-3.5 w-3.5" />
-              Preview
+              <AppWindow className="h-3.5 w-3.5" />
+              live preview
             </SandboxTabsTrigger>
           </div>
           {timerStartTime !== null && (
@@ -491,6 +491,11 @@ export default function Home() {
       }
 
       frame()
+
+      // play special audio for 67% score (only coding challenge completed)
+      if (score >= 67.0 && score < 68.0) {
+        playSixSevenAudio()
+      }
     }
   }, [score, isGrading, currentStep])
 
