@@ -130,7 +130,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
     <div className="space-y-6">
       {(isLoading || questions.length < 3) && (
         <Card variant="glass">
-          <CardContent className="pt-6">
+          <CardContent>
             <ChainOfThought defaultOpen>
               <ChainOfThoughtHeader>
                 Generating personalized questions
@@ -267,7 +267,7 @@ export function Questions({ resumeText, onComplete, onQuestionsLoaded }: Questio
                       }
                       onClick={() => handleSelect(index, option)}
                       disabled={isSubmitted}
-                      className={`w-full justify-start h-auto py-3 px-4 transition-all ${
+                      className={`w-full justify-start h-auto py-3 px-4 transition-all overflow-auto whitespace-normal ${
                         isSelected
                           ? 'ring-2 ring-primary ring-offset-2'
                           : ''
