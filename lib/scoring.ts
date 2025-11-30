@@ -122,6 +122,29 @@ export const calculateFormulaBasedScore = (
 ): number => {
   let rawScore = 0
 
+  // special case: if they only selected a favorite language and skipped everything else
+  const onlySelectedFavoriteLanguage = firstLanguage !== null &&
+    secondLanguage === null &&
+    codeChallengeGaveUp &&
+    totalQuestions === 0 &&
+    resumeScore === 0
+
+  if (onlySelectedFavoriteLanguage) {
+    return 6.9
+  }
+
+  // special case: if they only did the coding challenge and skipped everything else
+  const onlyCodingChallenge = firstLanguage === null &&
+    secondLanguage === null &&
+    !codeChallengeGaveUp &&
+    codeChallengeTime !== null &&
+    totalQuestions === 0 &&
+    resumeScore === 0
+
+  if (onlyCodingChallenge) {
+    return 67
+  }
+
   // code challenge base (35 points) - only if they didn't give up
   if (!codeChallengeGaveUp) {
     rawScore += CODE_CHALLENGE_BASE_SCORE
@@ -141,6 +164,15 @@ export const calculateFormulaBasedScore = (
 
   // apply log-scale normalization for realistic distribution
   let normalizedScore = normalizeScore(rawScore)
+
+  // boost score if they completed the coding challenge AND did at least one other thing
+  const hasOtherContributions = (firstLanguage !== null || secondLanguage !== null) ||
+    totalQuestions > 0 ||
+    resumeScore > 0
+
+  if (!codeChallengeGaveUp && codeChallengeTime !== null && hasOtherContributions) {
+    normalizedScore = normalizedScore * 1.15
+  }
 
   // apply harsh penalty if they gave up on code challenge
   // this ensures low-effort attempts (just picking languages) max out around 10%

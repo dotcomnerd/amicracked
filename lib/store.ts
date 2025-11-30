@@ -30,8 +30,8 @@ interface OnboardingState {
   questions: Question[]
   setCurrentStep: (step: number) => void
   setResumeFile: (file: File | null) => void
-  setFavoriteLanguage: (language: string) => void
-  setSecondFavoriteLanguage: (language: string) => void
+  setFavoriteLanguage: (language: string | null) => void
+  setSecondFavoriteLanguage: (language: string | null) => void
   setExtractedText: (text: string | null) => void
   setQuestionAnswers: (answers: Record<number, string>) => void
   setQuestions: (questions: Question[]) => void

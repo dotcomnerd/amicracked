@@ -43,6 +43,57 @@ export async function POST(req: Request) {
       })
     }
 
+    // special case: if they only selected a favorite language and skipped everything else
+    const onlySelectedFavoriteLanguage = favoriteLanguage !== null &&
+      secondFavoriteLanguage === null &&
+      codeChallengeGaveUp &&
+      questions.length === 0 &&
+      (typeof resumeScore !== 'number' || resumeScore === 0)
+
+    if (onlySelectedFavoriteLanguage) {
+      return Response.json({
+        success: true,
+        score: 6.9,
+        reasoning: `You scored 6.9% - you picked a language but skipped everything else. Nice try!`,
+        breakdown: {
+          raw: 0,
+          normalized: 6.9,
+          base: 0,
+          time: 0,
+          language: 0,
+          questions: 0,
+          resume: 0,
+          adjustment: 0,
+        },
+      })
+    }
+
+    // special case: if they only did the coding challenge and skipped everything else
+    const onlyCodingChallenge = (favoriteLanguage === null || favoriteLanguage === undefined) &&
+      (secondFavoriteLanguage === null || secondFavoriteLanguage === undefined) &&
+      !codeChallengeGaveUp &&
+      codeChallengeTime !== null &&
+      questions.length === 0 &&
+      (typeof resumeScore !== 'number' || resumeScore === 0)
+
+    if (onlyCodingChallenge) {
+      return Response.json({
+        success: true,
+        score: 67,
+        reasoning: `You scored 67% - you solved the coding challenge but skipped everything else. Not bad!`,
+        breakdown: {
+          raw: 0,
+          normalized: 67,
+          base: 0,
+          time: 0,
+          language: 0,
+          questions: 0,
+          resume: 0,
+          adjustment: 0,
+        },
+      })
+    }
+
     // calculate all score components
     const languageScore = calculateLanguageScore(favoriteLanguage, secondFavoriteLanguage)
     const timeScore = codeChallengeGaveUp ? 0 : calculateTimeScore(codeChallengeTime)
@@ -56,6 +107,15 @@ export async function POST(req: Request) {
     // normalize using log scale
     // this ensures average performance (~50-60 raw) maps to ~50-60 final score
     let normalizedScore = normalizeScore(rawScore)
+
+    // boost score if they completed the coding challenge AND did at least one other thing
+    const hasOtherContributions = (favoriteLanguage !== null || secondFavoriteLanguage !== null) ||
+      questions.length > 0 ||
+      validResumeScore > 0
+
+    if (!codeChallengeGaveUp && codeChallengeTime !== null && hasOtherContributions) {
+      normalizedScore = normalizedScore * 1.15
+    }
 
     // apply harsh penalty if they gave up on code challenge
     // this ensures low-effort attempts (just picking languages) max out around 10%

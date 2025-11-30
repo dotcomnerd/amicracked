@@ -138,7 +138,7 @@ export default function App() {
 }
 `
 
-const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, onTimeUpdate }: { onCodeValidChange: (isValid: boolean) => void; isValid: boolean; onBadgeRef: (ref: HTMLSpanElement | null) => void; timerStartTime: number | null; onTimeUpdate: (time: number) => void }) => {
+const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, onTimeUpdate, hasSkipped }: { onCodeValidChange: (isValid: boolean) => void; isValid: boolean; onBadgeRef: (ref: HTMLSpanElement | null) => void; timerStartTime: number | null; onTimeUpdate: (time: number) => void; hasSkipped: boolean }) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const badgeRef = useRef<HTMLSpanElement>(null)
@@ -160,7 +160,7 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, on
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold">Yeah you gotta fix this...</h3>
+            <h3 className="text-lg font-semibold">Fix the bug(s) in the code to continue! </h3>
           </div>
           {isValid ? (
             <Badge
@@ -182,7 +182,7 @@ const CodeEditor = ({ onCodeValidChange, isValid, onBadgeRef, timerStartTime, on
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Fix the bug(s) in the code to continue!
+          {hasSkipped ? "There's no skipping this one...you want to know if you're cracked, right?" : "It's just JavaScript, should be easy"}
         </p>
       </div>
       <div className="rounded-xl overflow-hidden border-2 border-border/50 bg-card shadow-sm" style={{ height: '420px' }}>
@@ -302,7 +302,7 @@ const getCrackedStatus = (score: number): string => {
   if (score >= 89) return 'Cracked Beyond Repair'
   if (score >= 74) return 'Interviewer\'s Nightmare'
   if (score >= 71) return 'Blazing Senior'
-  if (score >= 62) return 'Framework Whisperer'
+  if (score >= 62) return 'Meme Legend'
   if (score >= 50) return 'Veteran Engineer'
   if (score >= 44) return 'Functionally Sound'
   if (score >= 35) return 'Methodical Debugger'
@@ -360,6 +360,7 @@ export default function Home() {
   const [resumeScore, setResumeScore] = useState<number>(0)
   const [isEvaluatingResume, setIsEvaluatingResume] = useState(false)
   const [codeChallengeGaveUp, setCodeChallengeGaveUp] = useState(false)
+  const [hasSkipped, setHasSkipped] = useState(false)
 
   const handleBadgeRef = useCallback((ref: HTMLSpanElement | null) => {
     badgeRef.current = ref
@@ -388,6 +389,33 @@ export default function Home() {
     if (currentStep === 5 && score === null && !isGrading) {
       const hasResume = !!extractedText || resumeScore > 0
       const completedCodingChallenge = !codeChallengeGaveUp && codeChallengeTime !== null
+      const hasQuestions = questions.length > 0
+
+      // special case: only selected favorite language (no resume, gave up on coding challenge, no questions)
+      const onlySelectedFavoriteLanguage = favoriteLanguage !== null &&
+        secondFavoriteLanguage === null &&
+        codeChallengeGaveUp &&
+        !hasResume &&
+        !hasQuestions
+
+      // special case: only coding challenge (no languages, no resume, no questions, but completed challenge)
+      const onlyCodingChallenge = favoriteLanguage === null &&
+        secondFavoriteLanguage === null &&
+        completedCodingChallenge &&
+        !hasResume &&
+        !hasQuestions
+
+      // skip API call for special case: only selected favorite language (they get 6.9%)
+      if (onlySelectedFavoriteLanguage) {
+        setScore(calculateCrackedScore(favoriteLanguage, secondFavoriteLanguage, codeChallengeTime, questionAnswers, questions, resumeScore, codeChallengeGaveUp))
+        return
+      }
+
+      // skip API call for special case: only coding challenge (they get 67%)
+      if (onlyCodingChallenge) {
+        setScore(67)
+        return
+      }
 
       // skip API call if they only selected languages (no resume, gave up on coding challenge)
       if (!hasResume && !completedCodingChallenge) {
@@ -556,10 +584,31 @@ export default function Home() {
   }
 
   const handleSkip = () => {
+    setHasSkipped(true)
     setResumeFile(null)
     setExtractedText(null)
     setResumeScore(0)
     setCurrentStep(extractedText ? 3 : 2)
+  }
+
+  const handleSkipLanguage = () => {
+    setHasSkipped(true)
+    if (currentStep === 2 && !extractedText) {
+      setFavoriteLanguage(null)
+      nextStep()
+    } else if (currentStep === 3 && !favoriteLanguage) {
+      setFavoriteLanguage(null)
+      nextStep()
+    } else if (currentStep === 3 && favoriteLanguage) {
+      setSecondFavoriteLanguage(null)
+      nextStep()
+    }
+  }
+
+  const handleSkipQuestions = () => {
+    setHasSkipped(true)
+    setQuestionAnswers({})
+    nextStep()
   }
 
   const handleNextStep = () => {
@@ -849,6 +898,7 @@ export default function Home() {
                         setCodeChallengeTime(time)
                       }
                     }}
+                    hasSkipped={hasSkipped}
                   />
                 </motion.div>
             )}
@@ -872,7 +922,7 @@ export default function Home() {
                             <ChainOfThoughtContent>
                               <ChainOfThoughtStep
                                 icon={<Loader2 className="size-4" />}
-                                label="Analyzing your performance"
+                                label="Analyzing your performance..."
                                 description="Evaluating code challenge completion, resume quality, language selection, and question accuracy"
                                 status="active"
                                 animateIcon
@@ -884,7 +934,7 @@ export default function Home() {
                     ) : (
                       <>
                       <div className="space-y-2">
-                        <h3 className="text-2xl font-semibold">You Are</h3>
+                            <h3 className="text-2xl font-semibold">You are a</h3>
                         <div className="text-4xl font-bold text-primary"><ColourfulText text={status} /></div>
                         <div className="text-5xl font-bold"><ColourfulText text={`${finalScore}%`} /></div>
                         <div className="text-xs text-muted-foreground">Note: this is just a joke and is not to be taken seriously.</div>
@@ -917,16 +967,22 @@ export default function Home() {
                   Skip
                 </Button>
               )}
-                {currentStep === 4 && (
+                {(currentStep === 2 && extractedText) && (
                   <Button
                     variant="outline"
-                    className="text-sm px-3 py-2 h-auto text-muted-foreground"
-                    onClick={() => {
-                      setCodeChallengeGaveUp(true)
-                      nextStep()
-                    }}
+                    className="text-sm px-3 py-2 h-auto"
+                    onClick={handleSkipQuestions}
                   >
-                    Give Up
+                    Skip
+                  </Button>
+                )}
+                {((currentStep === 2 && !extractedText) || (currentStep === 3 && !favoriteLanguage) || (currentStep === 3 && favoriteLanguage)) && (
+                  <Button
+                    variant="outline"
+                    className="text-sm px-3 py-2 h-auto"
+                    onClick={handleSkipLanguage}
+                  >
+                    Skip
                   </Button>
                 )}
               <Button
@@ -938,7 +994,7 @@ export default function Home() {
                     (currentStep === 2 && !extractedText && !favoriteLanguage) ||
                     (currentStep === 3 && !favoriteLanguage) ||
                     (currentStep === 3 && favoriteLanguage && !secondFavoriteLanguage) ||
-                    (currentStep === 4 && !isCodeValid && !codeChallengeGaveUp)
+                    (currentStep === 4 && !isCodeValid)
                   }
               >
                 Next
@@ -952,6 +1008,7 @@ export default function Home() {
                     setScore(null)
                     setIsGrading(false)
                     setCodeChallengeGaveUp(false)
+                    setHasSkipped(false)
                     useOnboardingStore.getState().setCurrentStep(1)
                   }}
             >
