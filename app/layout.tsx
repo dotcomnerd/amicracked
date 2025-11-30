@@ -18,6 +18,13 @@ export const metadata: Metadata = {
   title: "Am I Cracked?",
   generator: "Next.js",
   applicationName: "Am I Cracked?",
+  alternates: {
+    canonical: "https://amicracked.com",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   description: "Ever wonder if you're the mystique 10x engineer? Let's find out together.",
   openGraph: {
     title: "Am I Cracked?",

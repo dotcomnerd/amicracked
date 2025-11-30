@@ -19,6 +19,7 @@ export function ColourfulText({ text, underlined = false }: { text: string, unde
 
     return text.split("").map((char, index) => (
         <motion.span
+            aria-hidden={true}
             key={`${char}-${index}`}
             initial={{
                 y: 0,

@@ -105,15 +105,15 @@ export default function LandingPage() {
           <CardContent className={cn("p-2")}>
             <div className="text-center space-y-2">
               <div className="space-y-1">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+                <h1 aria-hidden={true} className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
                   <ColourfulText text="Am I Cracked?" />
                 </h1>
                 <p className="text-xxs md:text-xs lg:text-sm text-muted-foreground max-w-60 mx-auto">
                   Ever wonder if you're a 10x engineer? Let's find out together.
                 </p>
                 <Separator className="my-2 w-full" />
-                <p className="text-xxs md:text-xs lg:text-sm text-muted-foreground mx-auto max-w-60">
-                  <span className="font-bold">tip:</span> try dragging/scrolling this canvas! its infinite ;)
+                <p aria-hidden={true} className="text-xxs md:text-xs lg:text-sm text-muted-foreground mx-auto max-w-60">
+                  <span aria-hidden={true} className="font-bold">tip:</span> try dragging/scrolling this canvas! its infinite ;)
                 </p>
               </div>
 
