@@ -1,3 +1,4 @@
+import { initBklit } from "@bklit/sdk";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
@@ -51,6 +52,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  initBklit({
+    projectId: "cmjp24qjn004mztfnubcv4z6i",
+    apiKey: "bk_live_085f694037a15bccb9a71f1dfaf3d130540ab3c5825c82d1a30ccdda2ea8d301",
+    apiHost: "https://app.bklit.com/api/track",
+  });
   return (
     <html lang="en" suppressHydrationWarning>
       <body
